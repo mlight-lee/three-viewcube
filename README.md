@@ -1,16 +1,37 @@
-# three-viewcube
+<h1 align="center">Three ViewCube</h1>
 
-The goal of this project is to implement one CAD editor similar to AutoCAD.
+ViewCube addon for THREE.js. It is implemented based on [this project](https://codesandbox.io/s/y35w749501?file=/src/index.js).
 
-## Features Not Supported For Now
+## Installation
 
-For now, the following features are not supported.
+You can install **Three ViewCube** via npm:
 
-- Draw lines with complex line types with embedded shape and text such as "Fenceline circle ----0-----0----0-----0----0---", "Zig zag /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/", and etc.
+```bash
+npm install three-viewport-gizmo
+```
+
+## Usage
+
+### Standalone
+
+Use it with your `camera` and `renderer` instances, the `container` is the `HTMLElement` containing the canvas.
+
+```javascript
+import { ViewCubeControls } from '@mlightcad/three-viewcube'
+
+const container = document.body
+const viewCubeControls = new ViewCubeControls(camera, renderer, options)
+
+// Animation loop
+function animate() {
+  viewCubeControls.render()
+
+  // ... Your animation logic
+  renderer.render(scene, camera)
+}
+```
 
 ## References
 
-- [2D Geometry Libraries for JavaScript](https://www.akselipalen.com/2021/06/10/2d-geometry-libraries-for-javascript/)
-- [2d-geometry](https://github.com/romgrk/2d-geometry/tree/master) is a fork of flatten-js focused on performance, ergonomics and Typescript
-- [Online SVG Code Editor](https://editsvgcode.com/)
-- [Understanding SVG Paths](https://www.nan.fyi/svg-paths)
+- [three-viewport-gizmo](https://github.com/Fennec-hub/three-viewport-gizmo/): a highly customizable standalone interactive version of the official [three.js viewport helper](https://github.com/mrdoob/three.js/blob/dev/examples/jsm/helpers/ViewHelper.js)
+
