@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "baseUrl": "./src",
+    "composite": true,
+    "lib": [
+      "ESNext",
+      "DOM"
+    ]
+  },
+  "references": [
+    {
+      "path": "../three-viewcube"
+    }
+  ],
+  "include": [
+    "src"
+  ]
+}

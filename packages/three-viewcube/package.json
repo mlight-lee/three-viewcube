@@ -1,0 +1,30 @@
+{
+  "name": "@mlightcad/three-viewcube",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "files": [
+    "dist",
+    "lib"
+  ],
+  "main": "./dist/viewcube.umd.cjs",
+  "module": "./dist/viewcube.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    "types": "./lib/index.d.ts",
+    "import": "./dist/viewcube.js",
+    "require": "./dist/viewcube.umd.cjs"
+  },
+  "scripts": {
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build",
+    "lint": "pnpm eslint -c ../../.eslintrc.js --ext .ts,.js,.vue --quiet src/"
+  },
+  "devDependencies": {
+    "@types/three": "^0.166.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4"
+  },
+  "peerDependencies": {
+    "three": "^0.166.1"
+  }
+}

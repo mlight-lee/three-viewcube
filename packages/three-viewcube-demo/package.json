@@ -1,0 +1,19 @@
+{
+  "name": "@mlightcad/three-viewcube-demo",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build",
+    "lint": "pnpm eslint -c ../../.eslintrc.js --ext .ts,.js,.vue --quiet src/"
+  },
+  "devDependencies": {
+    "@types/three": "^0.166.0"
+  },
+  "dependencies": {
+    "@mlightcad/three-viewcube": "0.0.1",
+    "three": "^0.166.1"
+  }
+}
