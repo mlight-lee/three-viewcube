@@ -64,7 +64,6 @@ function createTextSprite(
 }
 
 export function createFaceMaterials(faceNames: FaceNames = DEFAULT_FACENAMES) {
-  console.log('faceNames: ', faceNames)
   const materials = [
     {
       name: FACES.FRONT,

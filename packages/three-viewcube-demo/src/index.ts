@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-//import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
-import { ViewCubeControls } from '@mlightcad/three-viewcube'
+import { FaceNames, ViewCubeControls } from '@mlightcad/three-viewcube'
+import { ViewCube } from '@mlightcad/three-viewcube'
 
 // Create scene
 const scene = new THREE.Scene()
@@ -27,16 +27,6 @@ scene.add(ambientLight)
 scene.add(pointLight)
 
 // Create 3d objects
-const sideLength = 1
-const cubeGeometry = new THREE.BoxGeometry(sideLength, sideLength, sideLength)
-const cubeMaterial = new THREE.MeshStandardMaterial({
-  color: '#f69f1f',
-  metalness: 0.5,
-  roughness: 0.7
-})
-const cube = new THREE.Mesh(cubeGeometry, cubeMaterial)
-cube.castShadow = true
-cube.position.z = 0.5
 const planeGeometry = new THREE.PlaneGeometry(3, 3)
 const planeMaterial = new THREE.MeshLambertMaterial({
   color: 'gray',
@@ -47,12 +37,19 @@ const planeMaterial = new THREE.MeshLambertMaterial({
   opacity: 0.4
 })
 const plane = new THREE.Mesh(planeGeometry, planeMaterial)
-//plane.rotateX(Math.PI / 2)
 plane.receiveShadow = true
+const faceNames: FaceNames = {
+  top: '顶',
+  front: '前',
+  right: '右',
+  back: '后',
+  left: '左',
+  bottom: '底'
+}
+const cube = new ViewCube(1, 0.1, true, 0xcccccc, 0x999999, faceNames)
 scene.add(cube)
 scene.add(plane)
 scene.add(new THREE.AxesHelper(2))
-scene.add(new THREE.GridHelper(5, 10, 0xfffffff))
 
 // Create camera
 const camera = new THREE.PerspectiveCamera(
@@ -65,14 +62,7 @@ camera.lookAt(0, 0, 0)
 camera.position.set(0, 0, 3)
 
 // Create viewcube
-const domElement = document.querySelector('#cube-scene') as HTMLElement
-const viewCubeControls = new ViewCubeControls(domElement)
-// const viewCubeControls = new ViewHelper(camera, domElement)
-viewCubeControls.setQuaternion(camera.quaternion)
-viewCubeControls.addEventListener('change', event => {
-  camera.setRotationFromQuaternion(event.quaternion.invert())
-  camera.position.applyQuaternion(event.quaternion.invert())
-})
+const viewCubeControls = new ViewCubeControls(camera, renderer.domElement)
 
 // Create orbit controller
 const cameraControls = new OrbitControls(camera, renderer.domElement)
@@ -80,16 +70,12 @@ cameraControls.target = cube.position.clone()
 cameraControls.enableDamping = true
 cameraControls.autoRotate = false
 cameraControls.update()
-cameraControls.addEventListener('change', _event => {
-  //viewCubeControls.setQuaternion(camera.quaternion)
-})
 
 function update() {
   requestAnimationFrame(update)
   renderer.clear()
-  viewCubeControls.update()
   renderer.render(scene, camera)
-  // viewCubeControls.render(renderer)
+  viewCubeControls.render(renderer)
 }
 
 update()
