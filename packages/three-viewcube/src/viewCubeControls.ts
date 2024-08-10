@@ -26,7 +26,7 @@ export interface ViewCubeOptions {
   outlineColor?: number
 }
 
-const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
+export const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
   cubeSize: 30,
   edgeSize: 5,
   backgroundColor: MAINCOLOR,
@@ -40,6 +40,8 @@ export class ViewCubeControls extends THREE.EventDispatcher<ViewCubeEvent> {
   private _scene!: THREE.Scene
   private _cubeCamera!: THREE.PerspectiveCamera
 
+  center = new THREE.Vector3()
+
   constructor(
     domElement: HTMLElement,
     options: ViewCubeOptions = DEFAULT_VIEWCUBE_OPTIONS
@@ -49,13 +51,13 @@ export class ViewCubeControls extends THREE.EventDispatcher<ViewCubeEvent> {
       ...DEFAULT_VIEWCUBE_OPTIONS,
       ...options
     }
-    this._cube = new ViewCube({
-      size: mergedOptions.cubeSize!,
-      edge: mergedOptions.edgeSize!,
-      outline: true,
-      backgroundColor: mergedOptions.backgroundColor,
-      outlineColor: mergedOptions.outlineColor
-    })
+    this._cube = new ViewCube(
+      mergedOptions.cubeSize!,
+      mergedOptions.edgeSize!,
+      true,
+      mergedOptions.backgroundColor,
+      mergedOptions.outlineColor
+    )
     this.setCubeAngles(90, 0, 0, false)
     this._animation = null
     this.createScene(domElement)

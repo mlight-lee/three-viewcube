@@ -1,5 +1,22 @@
 import * as THREE from 'three'
 
+export interface FaceNames {
+  top: string
+  front: string
+  right: string
+  back: string
+  left: string
+  bottom: string
+}
+
+export const DEFAULT_FACENAMES: FaceNames = {
+  top: 'TOP',
+  front: 'FRONT',
+  right: 'RIGHT',
+  back: 'BACK',
+  left: 'LEFT',
+  bottom: 'BOTTOM'
+}
 function createTextSprite(
   text: string,
   props: {
@@ -46,6 +63,55 @@ function createTextSprite(
   return texture
 }
 
+export function createFaceMaterials(faceNames: FaceNames = DEFAULT_FACENAMES) {
+  console.log('faceNames: ', faceNames)
+  const materials = [
+    {
+      name: FACES.FRONT,
+      map: createTextSprite(faceNames.front, {
+        fontSize: 60,
+        font: 'Arial Narrow, sans-serif'
+      })
+    },
+    {
+      name: FACES.RIGHT,
+      map: createTextSprite(faceNames.right, {
+        fontSize: 60,
+        font: 'Arial Narrow, sans-serif'
+      })
+    },
+    {
+      name: FACES.BACK,
+      map: createTextSprite(faceNames.back, {
+        fontSize: 60,
+        font: 'Arial Narrow, sans-serif'
+      })
+    },
+    {
+      name: FACES.LEFT,
+      map: createTextSprite(faceNames.left, {
+        fontSize: 60,
+        font: 'Arial Narrow, sans-serif'
+      })
+    },
+    {
+      name: FACES.TOP,
+      map: createTextSprite(faceNames.top, {
+        fontSize: 60,
+        font: 'Arial Narrow, sans-serif'
+      })
+    },
+    {
+      name: FACES.BOTTOM,
+      map: createTextSprite(faceNames.bottom, {
+        fontSize: 60,
+        font: 'Arial Narrow, sans-serif'
+      })
+    }
+  ]
+  return materials
+}
+
 export const FACES = {
   TOP: '1',
   FRONT: '2',
@@ -80,51 +146,6 @@ export const FACES = {
   BOTTOM_FRONT_LEFT_CORNER: '26'
 }
 
-export const BOX_FACES = [
-  {
-    name: FACES.FRONT,
-    map: createTextSprite('FRONT', {
-      fontSize: 60,
-      font: 'Arial Narrow, sans-serif'
-    })
-  },
-  {
-    name: FACES.RIGHT,
-    map: createTextSprite('RIGHT', {
-      fontSize: 60,
-      font: 'Arial Narrow, sans-serif'
-    })
-  },
-  {
-    name: FACES.BACK,
-    map: createTextSprite('BACK', {
-      fontSize: 60,
-      font: 'Arial Narrow, sans-serif'
-    })
-  },
-  {
-    name: FACES.LEFT,
-    map: createTextSprite('LEFT', {
-      fontSize: 60,
-      font: 'Arial Narrow, sans-serif'
-    })
-  },
-  {
-    name: FACES.TOP,
-    map: createTextSprite('TOP', {
-      fontSize: 60,
-      font: 'Arial Narrow, sans-serif'
-    })
-  },
-  {
-    name: FACES.BOTTOM,
-    map: createTextSprite('BOTTOM', {
-      fontSize: 60,
-      font: 'Arial Narrow, sans-serif'
-    })
-  }
-]
-
 export const CORNER_FACES = [
   { name: FACES.TOP_FRONT_RIGHT_CORNER },
   { name: FACES.TOP_BACK_RIGHT_CORNER },
@@ -153,12 +174,4 @@ export const EDGE_FACES_SIDE = [
   { name: FACES.BACK_RIGHT_EDGE },
   { name: FACES.BACK_LEFT_EDGE },
   { name: FACES.FRONT_LEFT_EDGE }
-]
-
-// merge them all to ease the traversing
-export const CUBE_FACES = [
-  ...BOX_FACES,
-  ...CORNER_FACES,
-  ...EDGE_FACES,
-  ...EDGE_FACES_SIDE
 ]
