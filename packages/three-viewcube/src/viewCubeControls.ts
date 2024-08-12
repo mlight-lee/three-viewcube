@@ -31,11 +31,14 @@ export const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
   faceNames: DEFAULT_FACENAMES
 }
 
+const clock = new THREE.Clock()
+
 export class ViewCubeControls extends THREE.Object3D {
   private cube: ViewCube
   private cubePos: ViewCubePos
   private cubeDim: number
   private cubeCamera: THREE.OrthographicCamera
+  private renderer: THREE.WebGLRenderer
   private camera: THREE.PerspectiveCamera | THREE.OrthographicCamera
   private domElement: HTMLElement
   private animating: boolean
@@ -49,7 +52,7 @@ export class ViewCubeControls extends THREE.Object3D {
   public center: THREE.Vector3
   constructor(
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
-    domElement: HTMLElement,
+    renderer: THREE.WebGLRenderer,
     options: ViewCubeOptions = DEFAULT_VIEWCUBE_OPTIONS
   ) {
     super()
@@ -69,12 +72,10 @@ export class ViewCubeControls extends THREE.Object3D {
     this.add(this.cube)
 
     this.camera = camera
-    this.domElement = domElement
+    this.renderer = renderer
+    this.domElement = renderer.domElement
     this.animating = false
     this.center = new THREE.Vector3()
-
-    // const raycaster = new THREE.Raycaster()
-    // const mouse = new THREE.Vector2()
 
     this.cubeCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0, 4)
     this.cubeCamera.position.set(0, 0, 2)
@@ -93,40 +94,41 @@ export class ViewCubeControls extends THREE.Object3D {
 
     this.handleMouseMove = this.handleMouseMove.bind(this)
     this.handleMouseClick = this.handleMouseClick.bind(this)
-    this.listen(domElement)
+    this.listen(this.domElement)
   }
 
-  render(renderer: THREE.WebGLRenderer) {
+  render() {
+    const delta = clock.getDelta()
+    if (this.animating) this.animate(delta)
+
     this.quaternion.copy(this.camera.quaternion).invert()
     this.updateMatrixWorld()
 
     // Store autoClear flag value
-    const autoClear = renderer.autoClear;
-    renderer.autoClear = false;
+    const autoClear = this.renderer.autoClear
+    this.renderer.autoClear = false
 
-    renderer.clearDepth()
+    this.renderer.clearDepth()
     const viewport = new THREE.Vector4()
-    renderer.getViewport(viewport)
-    const domElement = renderer.domElement
+    this.renderer.getViewport(viewport)
+    const domElement = this.renderer.domElement
     const pos = this.calculateViewportPos(
       domElement.offsetWidth,
       domElement.offsetHeight,
       this.cubePos,
       this.cubeDim
     )
-    renderer.setViewport(pos.x, pos.y, this.cubeDim, this.cubeDim)
-    renderer.render(this, this.cubeCamera)
-    renderer.setViewport(viewport.x, viewport.y, viewport.z, viewport.w)
-    this.update()
+    this.renderer.setViewport(pos.x, pos.y, this.cubeDim, this.cubeDim)
+    this.renderer.render(this, this.cubeCamera)
+    this.renderer.setViewport(viewport.x, viewport.y, viewport.z, viewport.w)
 
     // Restore autoClear flag vlaue
-    renderer.autoClear = autoClear;
+    this.renderer.autoClear = autoClear
   }
 
-  update() {
+  animate(delta: number) {
     if (this.animating === false) return
 
-    const delta = 0.1
     const step = delta * this.turnRate
 
     // animate position by doing a slerp and then scaling the position on the unit sphere

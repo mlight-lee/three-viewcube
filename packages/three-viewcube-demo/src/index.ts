@@ -64,7 +64,7 @@ camera.lookAt(0, 0, 0)
 camera.position.set(0, 0, 3)
 
 // Create viewcube
-const viewCubeControls = new ViewCubeControls(camera, renderer.domElement)
+const viewCubeControls = new ViewCubeControls(camera, renderer)
 
 // Create orbit controller
 const cameraControls = new OrbitControls(camera, renderer.domElement)
@@ -77,7 +77,7 @@ function update() {
   requestAnimationFrame(update)
   renderer.clear()
   renderer.render(scene, camera)
-  viewCubeControls.render(renderer)
+  viewCubeControls.render()
 }
 
 update()

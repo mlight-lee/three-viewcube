@@ -13,12 +13,12 @@ npm install @mlightcad/three-viewcube
 
 ### Standalone
 
-Use it with your `camera` and `renderer` instances, the `container` is the `HTMLElement` containing the canvas.
+Use it with your `camera` and `renderer` instances.
 
 ```javascript
 import { ViewCubeControls } from '@mlightcad/three-viewcube'
 
-// Create renderer and set alhpa to true
+// Create your renderer and set alhpa to true
 const renderer = new THREE.WebGLRenderer({ alpha: true })
 
 // Create your camera
