@@ -6,6 +6,14 @@ const MAIN_COLOR = 0xdddddd
 const HOVER_COLOR = 0xf2f5ce
 const OUTLINE_COLOR = 0xcccccc
 
+interface OrbitControlsLike {
+  target: THREE.Vector3
+  addEventListener: (eventName: string, listener: () => void) => void
+  removeEventListener: (eventName: string, listener: () => void) => void
+}
+
+THREE.EventDispatcher
+
 export enum ViewCubePos {
   LEFT_BOTTOM = 0,
   LEFT_TOP = 1,
@@ -48,8 +56,9 @@ export class ViewCubeControls extends THREE.Object3D {
   private targetQuaternion: THREE.Quaternion
   private q1: THREE.Quaternion
   private q2: THREE.Quaternion
-
-  public center: THREE.Vector3
+  private controls: OrbitControlsLike | undefined
+  private controlsChangeEvent: { listener: () => void }
+  private target: THREE.Vector3
   constructor(
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
     renderer: THREE.WebGLRenderer,
@@ -75,7 +84,7 @@ export class ViewCubeControls extends THREE.Object3D {
     this.renderer = renderer
     this.domElement = renderer.domElement
     this.animating = false
-    this.center = new THREE.Vector3()
+    this.target = new THREE.Vector3()
 
     this.cubeCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0, 4)
     this.cubeCamera.position.set(0, 0, 2)
@@ -92,17 +101,32 @@ export class ViewCubeControls extends THREE.Object3D {
     this.q2 = new THREE.Quaternion()
     this.radius = 0
 
+    this.controlsChangeEvent = { listener: () => this.updateOrientation() }
+
     this.handleMouseMove = this.handleMouseMove.bind(this)
     this.handleMouseClick = this.handleMouseClick.bind(this)
     this.listen(this.domElement)
   }
 
+  setControls(controls: OrbitControlsLike) {
+    if (this.controls) {
+      this.controls.removeEventListener(
+        'change',
+        this.controlsChangeEvent.listener
+      )
+      this.target = new THREE.Vector3()
+    }
+
+    if (!controls) return
+
+    this.controls = controls
+    controls.addEventListener('change', this.controlsChangeEvent.listener)
+    this.target = controls.target
+  }
+
   render() {
     const delta = clock.getDelta()
     if (this.animating) this.animate(delta)
-
-    this.quaternion.copy(this.camera.quaternion).invert()
-    this.updateMatrixWorld()
 
     // Store autoClear flag value
     const autoClear = this.renderer.autoClear
@@ -137,10 +161,12 @@ export class ViewCubeControls extends THREE.Object3D {
       .set(0, 0, 1)
       .applyQuaternion(this.q1)
       .multiplyScalar(this.radius)
-      .add(this.center)
+      .add(this.target)
 
     // animate orientation
     this.camera.quaternion.rotateTowards(this.targetQuaternion, step)
+
+    this.updateOrientation()
 
     if (this.q1.angleTo(this.q2) === 0) {
       this.animating = false
@@ -149,6 +175,11 @@ export class ViewCubeControls extends THREE.Object3D {
 
   dispose() {
     this.cube.dispose()
+  }
+
+  private updateOrientation() {
+    this.quaternion.copy(this.camera.quaternion).invert()
+    this.updateMatrixWorld()
   }
 
   private listen(domElement: HTMLElement) {
@@ -211,7 +242,7 @@ export class ViewCubeControls extends THREE.Object3D {
     if (intersects.length) {
       for (const { object } of intersects) {
         if (object.name) {
-          this.prepareAnimationData(object.name, this.center)
+          this.prepareAnimationData(object.name, this.target)
           break
         }
       }
@@ -405,8 +436,18 @@ export class ViewCubeControls extends THREE.Object3D {
           new THREE.Euler(0, -Math.PI * 0.25, 0)
         )
         break
+
+      case FACES.TOP_FRONT_RIGHT_CORNER:
+        this.targetPosition.set(1, 1, 1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI / 4, -Math.PI / 4, 0)
+        )
+        break
+
       default:
-        console.error('ViewCubeControls: Invalid face, edge, or corner name!')
+        console.error(
+          `ViewCubeControls: Invalid face, edge, or corner name '${side}'!`
+        )
         break
     }
 

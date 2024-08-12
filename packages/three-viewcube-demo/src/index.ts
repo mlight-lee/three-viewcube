@@ -37,8 +37,6 @@ const planeMaterial = new THREE.MeshLambertMaterial({
 })
 const plane = new THREE.Mesh(planeGeometry, planeMaterial)
 plane.receiveShadow = true
-// const box = new THREE.BoxGeometry(1, 1)
-// const cube = new THREE.Mesh(box, planeMaterial)
 const faceNames: FaceNames = {
   top: '顶',
   front: '前',
@@ -48,7 +46,6 @@ const faceNames: FaceNames = {
   bottom: '底'
 }
 const cube = new ViewCube(1, 0.1, true, 0xcccccc, 0x999999, faceNames)
-//applyQuaternion(cube)
 scene.add(cube)
 scene.add(plane)
 scene.add(new THREE.AxesHelper(2))
@@ -63,15 +60,16 @@ const camera = new THREE.PerspectiveCamera(
 camera.lookAt(0, 0, 0)
 camera.position.set(0, 0, 3)
 
-// Create viewcube
-const viewCubeControls = new ViewCubeControls(camera, renderer)
-
 // Create orbit controller
 const cameraControls = new OrbitControls(camera, renderer.domElement)
 cameraControls.target = cube.position.clone()
 cameraControls.enableDamping = true
 cameraControls.autoRotate = false
 cameraControls.update()
+
+// Create viewcube
+const viewCubeControls = new ViewCubeControls(camera, renderer)
+viewCubeControls.setControls(cameraControls)
 
 function update() {
   requestAnimationFrame(update)

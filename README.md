@@ -24,8 +24,12 @@ const renderer = new THREE.WebGLRenderer({ alpha: true })
 // Create your camera
 const camera = ...
 
+// Create your orbit controller
+const cameraControls = new OrbitControls(camera, renderer.domElement)
+
 // Create viewcube control
 const viewCubeControls = new ViewCubeControls(camera, renderer, options)
+viewCubeControls.setControls(cameraControls)
 
 // Animation loop
 function animate() {
