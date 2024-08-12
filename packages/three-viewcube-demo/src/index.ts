@@ -6,7 +6,6 @@ import { ViewCube } from '@mlightcad/three-viewcube'
 // Create scene
 const scene = new THREE.Scene()
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-renderer.autoClear = false
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -38,6 +37,8 @@ const planeMaterial = new THREE.MeshLambertMaterial({
 })
 const plane = new THREE.Mesh(planeGeometry, planeMaterial)
 plane.receiveShadow = true
+// const box = new THREE.BoxGeometry(1, 1)
+// const cube = new THREE.Mesh(box, planeMaterial)
 const faceNames: FaceNames = {
   top: '顶',
   front: '前',
@@ -47,6 +48,7 @@ const faceNames: FaceNames = {
   bottom: '底'
 }
 const cube = new ViewCube(1, 0.1, true, 0xcccccc, 0x999999, faceNames)
+//applyQuaternion(cube)
 scene.add(cube)
 scene.add(plane)
 scene.add(new THREE.AxesHelper(2))

@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { DEFAULT_FACENAMES, FaceNames } from './viewCubeData'
+import { DEFAULT_FACENAMES, FACES, FaceNames } from './viewCubeData'
 import { ViewCube } from './viewCube'
 
 const MAIN_COLOR = 0xdddddd
@@ -15,7 +15,7 @@ export enum ViewCubePos {
 
 export interface ViewCubeOptions {
   pos?: ViewCubePos
-  length?: number
+  dimension?: number
   faceColor?: number
   hoverColor?: number
   outlineColor?: number
@@ -24,7 +24,7 @@ export interface ViewCubeOptions {
 
 export const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
   pos: ViewCubePos.RIGHT_TOP,
-  length: 128,
+  dimension: 150,
   faceColor: MAIN_COLOR,
   hoverColor: HOVER_COLOR,
   outlineColor: OUTLINE_COLOR,
@@ -35,12 +35,11 @@ export class ViewCubeControls extends THREE.Object3D {
   private cube: ViewCube
   private cubePos: ViewCubePos
   private cubeDim: number
-  private orthoCamera: THREE.OrthographicCamera
+  private cubeCamera: THREE.OrthographicCamera
   private camera: THREE.PerspectiveCamera | THREE.OrthographicCamera
   private domElement: HTMLElement
   private animating: boolean
   private turnRate: number
-  private dummy: THREE.Object3D
   private radius: number
   private targetPosition: THREE.Vector3
   private targetQuaternion: THREE.Quaternion
@@ -76,12 +75,11 @@ export class ViewCubeControls extends THREE.Object3D {
 
     // const raycaster = new THREE.Raycaster()
     // const mouse = new THREE.Vector2()
-    this.dummy = new THREE.Object3D()
 
-    this.orthoCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0, 4)
-    this.orthoCamera.position.set(0, 0, 2)
+    this.cubeCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0, 4)
+    this.cubeCamera.position.set(0, 0, 2)
 
-    this.cubeDim = mergedOptions.length!
+    this.cubeDim = mergedOptions.dimension!
     this.cubePos = mergedOptions.pos!
 
     this.turnRate = 2 * Math.PI // turn rate in angles per second
@@ -92,32 +90,43 @@ export class ViewCubeControls extends THREE.Object3D {
     this.q1 = new THREE.Quaternion()
     this.q2 = new THREE.Quaternion()
     this.radius = 0
+
+    this.handleMouseMove = this.handleMouseMove.bind(this)
+    this.handleMouseClick = this.handleMouseClick.bind(this)
+    this.listen(domElement)
   }
 
   render(renderer: THREE.WebGLRenderer) {
     this.quaternion.copy(this.camera.quaternion).invert()
     this.updateMatrixWorld()
+
+    // Store autoClear flag value
+    const autoClear = renderer.autoClear;
+    renderer.autoClear = false;
+
     renderer.clearDepth()
     const viewport = new THREE.Vector4()
     renderer.getViewport(viewport)
     const domElement = renderer.domElement
     const pos = this.calculateViewportPos(
-      domElement.offsetWidth, 
+      domElement.offsetWidth,
       domElement.offsetHeight,
       this.cubePos,
       this.cubeDim
     )
     renderer.setViewport(pos.x, pos.y, this.cubeDim, this.cubeDim)
-    renderer.render(this, this.orthoCamera)
-    renderer.setViewport(
-      viewport.x,
-      viewport.y,
-      viewport.z,
-      viewport.w
-    )
+    renderer.render(this, this.cubeCamera)
+    renderer.setViewport(viewport.x, viewport.y, viewport.z, viewport.w)
+    this.update()
+
+    // Restore autoClear flag vlaue
+    renderer.autoClear = autoClear;
   }
 
-  update(delta: number) {
+  update() {
+    if (this.animating === false) return
+
+    const delta = 0.1
     const step = delta * this.turnRate
 
     // animate position by doing a slerp and then scaling the position on the unit sphere
@@ -140,30 +149,99 @@ export class ViewCubeControls extends THREE.Object3D {
     this.cube.dispose()
   }
 
-  handleClick(event: MouseEvent) {
+  private listen(domElement: HTMLElement) {
+    domElement.addEventListener('mousemove', this.handleMouseMove)
+    domElement.addEventListener('click', this.handleMouseClick)
+  }
+
+  private handleMouseClick(event: MouseEvent) {
     if (this.animating === true) return false
 
-    const raycaster = new THREE.Raycaster()
-    const mouse = new THREE.Vector2()
-
-    const rect = this.domElement.getBoundingClientRect()
-    const offsetX = rect.left + (this.domElement.offsetWidth - this.cubeDim)
-    const offsetY = rect.top + (this.domElement.offsetHeight - this.cubeDim)
-    mouse.x = ((event.clientX - offsetX) / (rect.right - offsetX)) * 2 - 1
-    mouse.y = -((event.clientY - offsetY) / (rect.bottom - offsetY)) * 2 + 1
-
-    raycaster.setFromCamera(mouse, this.orthoCamera)
-
-    const intersects = raycaster.intersectObject(this.cube)
-
-    if (intersects.length > 0) {
-      //const intersection = intersects[0]
-      //const object = intersection.object
-      this.prepareAnimationData(this.cube, this.center)
+    const bbox = this.calculateViewportBbox(
+      this.domElement.offsetWidth,
+      this.domElement.offsetHeight,
+      this.cubePos,
+      this.cubeDim
+    )
+    if (bbox.containsPoint(new THREE.Vector2(event.offsetX, event.offsetY))) {
+      const pos = this.calculatePosInViewport(
+        event.offsetX,
+        event.offsetY,
+        bbox
+      )
+      this.checkSideTouch(pos.x, pos.y)
+      //this.prepareAnimationData(this.cube, this.center)
       this.animating = true
-      return true
-    } else {
-      return false
+    }
+  }
+
+  private handleMouseMove(event: MouseEvent) {
+    const bbox = this.calculateViewportBbox(
+      this.domElement.offsetWidth,
+      this.domElement.offsetHeight,
+      this.cubePos,
+      this.cubeDim
+    )
+    if (bbox.containsPoint(new THREE.Vector2(event.offsetX, event.offsetY))) {
+      const pos = this.calculatePosInViewport(
+        event.offsetX,
+        event.offsetY,
+        bbox
+      )
+      this.checkSideOver(pos.x, pos.y)
+    }
+  }
+
+  private calculatePosInViewport(
+    offsetX: number,
+    offsetY: number,
+    bbox: THREE.Box2
+  ) {
+    const x = ((offsetX - bbox.min.x) / this.cubeDim) * 2 - 1
+    const y = -((offsetY - bbox.min.y) / this.cubeDim) * 2 + 1
+    return { x, y }
+  }
+
+  private checkSideTouch(x: number, y: number) {
+    const raycaster = new THREE.Raycaster()
+    raycaster.setFromCamera(new THREE.Vector2(x, y), this.cubeCamera)
+    const intersects = raycaster.intersectObjects(this.cube.children, true)
+    if (intersects.length) {
+      for (const { object } of intersects) {
+        if (object.name) {
+          this.prepareAnimationData(object.name, this.center)
+          break
+        }
+      }
+    }
+  }
+
+  private checkSideOver(x: number, y: number) {
+    const raycaster = new THREE.Raycaster()
+    raycaster.setFromCamera(new THREE.Vector2(x, y), this.cubeCamera)
+    const intersects = raycaster.intersectObjects(this.cube.children, true)
+    // unhover
+    this.cube.traverse(function (obj) {
+      if (obj.name) {
+        const mesh = obj as THREE.Mesh
+        ;(mesh.material as THREE.MeshBasicMaterial).color.setHex(MAIN_COLOR)
+      }
+    })
+    // check hover
+    if (intersects.length) {
+      for (const { object } of intersects) {
+        if (object.name) {
+          object.parent!.children.forEach(function (child) {
+            if (child.name === object.name) {
+              const mesh = child as THREE.Mesh
+              ;(mesh.material as THREE.MeshBasicMaterial).color.setHex(
+                HOVER_COLOR
+              )
+            }
+          })
+          break
+        }
+      }
     }
   }
 
@@ -173,72 +251,173 @@ export class ViewCubeControls extends THREE.Object3D {
     pos: ViewCubePos,
     length: number
   ) {
-    let x = 0
-    let y = 0
-    switch(pos) {
-      case ViewCubePos.LEFT_TOP:
-        y = canvasHeight - length
+    let x = canvasWidth - length
+    let y = canvasHeight - length
+    switch (pos) {
+      case ViewCubePos.LEFT_BOTTOM:
+        x = 0
+        y = 0
         break
-      case ViewCubePos.RIGHT_TOP:
-        x = canvasWidth - length
-        y = canvasHeight - length
+      case ViewCubePos.LEFT_TOP:
+        x = 0
         break
       case ViewCubePos.RIGHT_BOTTOM:
-        x = canvasWidth - length
+        y = 0
         break
     }
-    return {x, y}
+    return { x, y }
   }
 
-  private prepareAnimationData(cube: ViewCube, focusPoint: THREE.Vector3Like) {
-    switch (cube.userData.type) {
-      case 'posX':
-        this.targetPosition.set(1, 0, 0)
-        this.targetQuaternion.setFromEuler(new THREE.Euler(0, Math.PI * 0.5, 0))
-        break
-
-      case 'posY':
-        this.targetPosition.set(0, 1, 0)
-        this.targetQuaternion.setFromEuler(
-          new THREE.Euler(-Math.PI * 0.5, 0, 0)
+  private calculateViewportBbox(
+    canvasWidth: number,
+    canvasHeight: number,
+    pos: ViewCubePos,
+    length: number
+  ) {
+    const bbox = new THREE.Box2(
+      new THREE.Vector2(canvasWidth - length, 0),
+      new THREE.Vector2(canvasWidth, length)
+    )
+    switch (pos) {
+      case ViewCubePos.LEFT_BOTTOM:
+        bbox.set(
+          new THREE.Vector2(0, canvasHeight - length),
+          new THREE.Vector2(length, canvasHeight)
         )
         break
+      case ViewCubePos.LEFT_TOP:
+        bbox.set(new THREE.Vector2(0, 0), new THREE.Vector2(length, length))
+        break
+      case ViewCubePos.RIGHT_BOTTOM:
+        bbox.set(
+          new THREE.Vector2(canvasWidth - length, canvasHeight - length),
+          new THREE.Vector2(canvasWidth, canvasHeight)
+        )
+        break
+    }
+    return bbox
+  }
 
-      case 'posZ':
+  private prepareAnimationData(side: string, focusPoint: THREE.Vector3Like) {
+    switch (side) {
+      case FACES.FRONT:
         this.targetPosition.set(0, 0, 1)
         this.targetQuaternion.setFromEuler(new THREE.Euler())
         break
-
-      case 'negX':
+      case FACES.RIGHT:
+        this.targetPosition.set(1, 0, 0)
+        this.targetQuaternion.setFromEuler(new THREE.Euler(0, Math.PI * 0.5, 0))
+        break
+      case FACES.BACK:
+        this.targetPosition.set(0, 0, -1)
+        this.targetQuaternion.setFromEuler(new THREE.Euler(0, Math.PI, 0))
+        break
+      case FACES.LEFT:
         this.targetPosition.set(-1, 0, 0)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(0, -Math.PI * 0.5, 0)
         )
         break
-
-      case 'negY':
+      case FACES.TOP:
+        this.targetPosition.set(0, 1, 0)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.5, 0, 0)
+        )
+        break
+      case FACES.BOTTOM:
         this.targetPosition.set(0, -1, 0)
         this.targetQuaternion.setFromEuler(new THREE.Euler(Math.PI * 0.5, 0, 0))
         break
 
-      case 'negZ':
-        this.targetPosition.set(0, 0, -1)
-        this.targetQuaternion.setFromEuler(new THREE.Euler(0, Math.PI, 0))
+      case FACES.TOP_FRONT_EDGE:
+        this.targetPosition.set(0, 1, 1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, 0, 0)
+        )
+        break
+      case FACES.TOP_RIGHT_EDGE:
+        this.targetPosition.set(1, 1, 0)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, Math.PI * 0.5, 0, 'YXZ')
+        )
+        break
+      case FACES.TOP_BACK_EDGE:
+        this.targetPosition.set(0, 1, -1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, Math.PI, 0, 'YXZ')
+        )
+        break
+      case FACES.TOP_LEFT_EDGE:
+        this.targetPosition.set(-1, 1, 0)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, -Math.PI * 0.5, 0, 'YXZ')
+        )
         break
 
+      case FACES.BOTTOM_FRONT_EDGE:
+        this.targetPosition.set(0, -1, 1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, 0, 0)
+        )
+        break
+      case FACES.BOTTOM_RIGHT_EDGE:
+        this.targetPosition.set(1, -1, 0)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, Math.PI * 0.5, 0, 'YXZ')
+        )
+        break
+      case FACES.BOTTOM_BACK_EDGE:
+        this.targetPosition.set(0, -1, -1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, Math.PI, 0, 'YXZ')
+        )
+        break
+      case FACES.BOTTOM_LEFT_EDGE:
+        this.targetPosition.set(-1, -1, 0)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, -Math.PI * 0.5, 0, 'YXZ')
+        )
+        break
+
+      case FACES.FRONT_RIGHT_EDGE:
+        this.targetPosition.set(1, 0, 1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(0, Math.PI * 0.25, 0)
+        )
+        break
+      case FACES.BACK_RIGHT_EDGE:
+        this.targetPosition.set(1, 0, -1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(0, Math.PI * 0.75, 0)
+        )
+        break
+      case FACES.BACK_LEFT_EDGE:
+        this.targetPosition.set(-1, 0, -1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(0, -Math.PI * 0.75, 0)
+        )
+        break
+      case FACES.FRONT_LEFT_EDGE:
+        this.targetPosition.set(-1, 0, 1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(0, -Math.PI * 0.25, 0)
+        )
+        break
       default:
-        console.error('ViewHelper: Invalid axis.')
+        console.error('ViewCubeControls: Invalid face, edge, or corner name!')
+        break
     }
 
     this.radius = this.camera.position.distanceTo(focusPoint)
     this.targetPosition.multiplyScalar(this.radius).add(focusPoint)
 
-    this.dummy.position.copy(focusPoint)
+    const dummy = new THREE.Object3D()
+    dummy.position.copy(focusPoint)
 
-    this.dummy.lookAt(this.camera.position)
-    this.q1.copy(this.dummy.quaternion)
+    dummy.lookAt(this.camera.position)
+    this.q1.copy(dummy.quaternion)
 
-    this.dummy.lookAt(this.targetPosition)
-    this.q2.copy(this.dummy.quaternion)
+    dummy.lookAt(this.targetPosition)
+    this.q2.copy(dummy.quaternion)
   }
 }
