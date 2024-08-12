@@ -6,7 +6,7 @@ ViewCube addon for THREE.js.
 You can install **Three ViewCube** via npm:
 
 ```bash
-npm install three-viewport-gizmo
+npm install @mlightcad/three-viewcube
 ```
 
 ## Usage
@@ -39,7 +39,7 @@ animate()
 ```
 
 ## References
-- [viewcube demo project](https://codesandbox.io/s/y35w749501?file=/src/index.js).
-- [three-viewport-gizmo](https://github.com/Fennec-hub/three-viewport-gizmo/): a highly customizable standalone interactive version of the official [three.js viewport helper](https://github.com/mrdoob/three.js/blob/dev/examples/jsm/helpers/ViewHelper.js)
+- [viewcube demo project](https://codesandbox.io/s/y35w749501?file=/src/index.js)
+- [three-viewport-gizmo](https://github.com/Fennec-hub/three-viewport-gizmo/)
 - [three.js viewport helper](https://github.com/mrdoob/three.js/blob/dev/examples/jsm/helpers/ViewHelper.js)
 
