@@ -1,45 +1,53 @@
 import * as THREE from 'three'
 import {
-  BOX_FACES,
   CORNER_FACES,
+  createFaceMaterials,
+  DEFAULT_FACENAMES,
   EDGE_FACES,
-  EDGE_FACES_SIDE
+  EDGE_FACES_SIDE,
+  FaceNames
 } from './viewCubeData'
 
 export class ViewCube extends THREE.Object3D {
   private _cubeSize: number
   private _edgeSize: number
   private _outline: boolean
-  private _backgroundColor: number
+  private _faceColor: number
   private _outlineColor: number
 
-  constructor({
-    size = 60,
-    edge = 5,
-    outline = true,
-    backgroundColor = 0xcccccc,
-    outlineColor = 0x999999
-  }) {
+  constructor(
+    size: number = 60,
+    edge: number = 5,
+    outline: boolean = true,
+    faceColor: number = 0xcccccc,
+    outlineColor: number = 0x999999,
+    faceNames: FaceNames = DEFAULT_FACENAMES
+  ) {
     super()
     this._cubeSize = size
     this._edgeSize = edge
     this._outline = outline
-    this._backgroundColor = backgroundColor
+    this._faceColor = faceColor
     this._outlineColor = outlineColor
-    this.build()
+    this.build(faceNames)
   }
 
-  private build() {
+  dispose() {
+    // TODO: Finish it
+  }
+
+  private build(faceNames: FaceNames) {
     const faceSize = this._cubeSize - this._edgeSize * 2
     const faceOffset = this._cubeSize / 2
     const borderSize = this._edgeSize
 
     /* faces: front, right, back, left, top, bottom */
     const cubeFaces = this.createCubeFaces(faceSize, faceOffset)
-    for (const [i, props] of BOX_FACES.entries()) {
+    const faceMaterials = createFaceMaterials(faceNames)
+    for (const [i, props] of faceMaterials.entries()) {
       const face = cubeFaces.children[i] as THREE.Mesh
       const material = face.material as THREE.MeshBasicMaterial
-      material.color.setHex(this._backgroundColor)
+      material.color.setHex(this._faceColor)
       material.map = props.map
       face.name = props.name
     }
@@ -52,7 +60,7 @@ export class ViewCube extends THREE.Object3D {
         borderSize,
         faceOffset,
         props.name,
-        { color: this._backgroundColor }
+        { color: this._faceColor }
       )
       corner.rotateOnAxis(
         new THREE.Vector3(0, 1, 0),
@@ -77,7 +85,7 @@ export class ViewCube extends THREE.Object3D {
         borderSize,
         faceOffset,
         props.name,
-        { color: this._backgroundColor }
+        { color: this._faceColor }
       )
       edge.rotateOnAxis(
         new THREE.Vector3(0, 1, 0),
@@ -102,7 +110,7 @@ export class ViewCube extends THREE.Object3D {
         faceSize,
         faceOffset,
         props.name,
-        { color: this._backgroundColor }
+        { color: this._faceColor }
       )
       edge.rotateOnAxis(
         new THREE.Vector3(0, 1, 0),

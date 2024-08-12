@@ -1,249 +1,230 @@
 import * as THREE from 'three'
-import { FACES } from './viewCubeData'
+import { DEFAULT_FACENAMES, FACES, FaceNames } from './viewCubeData'
 import { ViewCube } from './viewCube'
 
-const MAINCOLOR = 0xdddddd
-const ACCENTCOLOR = 0xf2f5ce
-const OUTLINECOLOR = 0xcccccc
+const MAIN_COLOR = 0xdddddd
+const HOVER_COLOR = 0xf2f5ce
+const OUTLINE_COLOR = 0xcccccc
 
-interface Animation {
-  base: THREE.Vector3Like
-  delta: THREE.Vector3Like
-  duration: number
-  time: number
-}
-
-export interface ViewCubeEvent {
-  start: { quaternion: THREE.Quaternion }
-  change: { quaternion: THREE.Quaternion }
-  end: { quaternion: THREE.Quaternion }
+export enum ViewCubePos {
+  LEFT_BOTTOM = 0,
+  LEFT_TOP = 1,
+  RIGHT_TOP = 2,
+  RIGHT_BOTTOM = 4
 }
 
 export interface ViewCubeOptions {
-  cubeSize?: number
-  edgeSize?: number
-  backgroundColor?: number
+  pos?: ViewCubePos
+  dimension?: number
+  faceColor?: number
+  hoverColor?: number
   outlineColor?: number
+  faceNames?: FaceNames
 }
 
-const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
-  cubeSize: 30,
-  edgeSize: 5,
-  backgroundColor: MAINCOLOR,
-  outlineColor: OUTLINECOLOR
+export const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
+  pos: ViewCubePos.RIGHT_TOP,
+  dimension: 150,
+  faceColor: MAIN_COLOR,
+  hoverColor: HOVER_COLOR,
+  outlineColor: OUTLINE_COLOR,
+  faceNames: DEFAULT_FACENAMES
 }
 
-export class ViewCubeControls extends THREE.EventDispatcher<ViewCubeEvent> {
-  private _cube: ViewCube
-  private _animation: Animation | null
-  private _renderer!: THREE.WebGLRenderer
-  private _scene!: THREE.Scene
-  private _cubeCamera!: THREE.PerspectiveCamera
+export class ViewCubeControls extends THREE.Object3D {
+  private cube: ViewCube
+  private cubePos: ViewCubePos
+  private cubeDim: number
+  private cubeCamera: THREE.OrthographicCamera
+  private camera: THREE.PerspectiveCamera | THREE.OrthographicCamera
+  private domElement: HTMLElement
+  private animating: boolean
+  private turnRate: number
+  private radius: number
+  private targetPosition: THREE.Vector3
+  private targetQuaternion: THREE.Quaternion
+  private q1: THREE.Quaternion
+  private q2: THREE.Quaternion
 
+  public center: THREE.Vector3
   constructor(
+    camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
     domElement: HTMLElement,
     options: ViewCubeOptions = DEFAULT_VIEWCUBE_OPTIONS
   ) {
     super()
+
     const mergedOptions: ViewCubeOptions = {
       ...DEFAULT_VIEWCUBE_OPTIONS,
       ...options
     }
-    this._cube = new ViewCube({
-      size: mergedOptions.cubeSize!,
-      edge: mergedOptions.edgeSize!,
-      outline: true,
-      backgroundColor: mergedOptions.backgroundColor,
-      outlineColor: mergedOptions.outlineColor
-    })
-    this.setCubeAngles(90, 0, 0, false)
-    this._animation = null
-    this.createScene(domElement)
+    this.cube = new ViewCube(
+      2,
+      0.2,
+      true,
+      mergedOptions.faceColor,
+      mergedOptions.outlineColor,
+      mergedOptions.faceNames
+    )
+    this.add(this.cube)
+
+    this.camera = camera
+    this.domElement = domElement
+    this.animating = false
+    this.center = new THREE.Vector3()
+
+    // const raycaster = new THREE.Raycaster()
+    // const mouse = new THREE.Vector2()
+
+    this.cubeCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0, 4)
+    this.cubeCamera.position.set(0, 0, 2)
+
+    this.cubeDim = mergedOptions.dimension!
+    this.cubePos = mergedOptions.pos!
+
+    this.turnRate = 2 * Math.PI // turn rate in angles per second
+
+    this.targetPosition = new THREE.Vector3()
+    this.targetQuaternion = new THREE.Quaternion()
+
+    this.q1 = new THREE.Quaternion()
+    this.q2 = new THREE.Quaternion()
+    this.radius = 0
+
     this.handleMouseMove = this.handleMouseMove.bind(this)
     this.handleMouseClick = this.handleMouseClick.bind(this)
-    this.listen()
+    this.listen(domElement)
   }
 
-  private createScene(domElement: HTMLElement) {
-    const renderer = new THREE.WebGLRenderer({ alpha: true })
-    renderer.setSize(150, 150)
-    this._renderer = renderer
+  render(renderer: THREE.WebGLRenderer) {
+    this.quaternion.copy(this.camera.quaternion).invert()
+    this.updateMatrixWorld()
 
-    domElement.appendChild(renderer.domElement)
+    // Store autoClear flag value
+    const autoClear = renderer.autoClear;
+    renderer.autoClear = false;
 
-    const scene = new THREE.Scene()
-    scene.add(this._cube)
-    this._scene = scene
+    renderer.clearDepth()
+    const viewport = new THREE.Vector4()
+    renderer.getViewport(viewport)
+    const domElement = renderer.domElement
+    const pos = this.calculateViewportPos(
+      domElement.offsetWidth,
+      domElement.offsetHeight,
+      this.cubePos,
+      this.cubeDim
+    )
+    renderer.setViewport(pos.x, pos.y, this.cubeDim, this.cubeDim)
+    renderer.render(this, this.cubeCamera)
+    renderer.setViewport(viewport.x, viewport.y, viewport.z, viewport.w)
+    this.update()
 
-    const cubeCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000)
-    cubeCamera.position.set(0, 0, 70)
-    cubeCamera.lookAt(0, 0, 0)
-    this._cubeCamera = cubeCamera
+    // Restore autoClear flag vlaue
+    renderer.autoClear = autoClear;
   }
 
-  private listen() {
-    const domElement = this._renderer.domElement
+  update() {
+    if (this.animating === false) return
+
+    const delta = 0.1
+    const step = delta * this.turnRate
+
+    // animate position by doing a slerp and then scaling the position on the unit sphere
+    this.q1.rotateTowards(this.q2, step)
+    this.camera.position
+      .set(0, 0, 1)
+      .applyQuaternion(this.q1)
+      .multiplyScalar(this.radius)
+      .add(this.center)
+
+    // animate orientation
+    this.camera.quaternion.rotateTowards(this.targetQuaternion, step)
+
+    if (this.q1.angleTo(this.q2) === 0) {
+      this.animating = false
+    }
+  }
+
+  dispose() {
+    this.cube.dispose()
+  }
+
+  private listen(domElement: HTMLElement) {
     domElement.addEventListener('mousemove', this.handleMouseMove)
     domElement.addEventListener('click', this.handleMouseClick)
   }
 
   private handleMouseClick(event: MouseEvent) {
-    const target = event.target as HTMLElement
-    const x = (event.offsetX / target.clientWidth) * 2 - 1
-    const y = -(event.offsetY / target.clientHeight) * 2 + 1
-    this.checkSideTouch(x, y)
+    if (this.animating === true) return false
+
+    const bbox = this.calculateViewportBbox(
+      this.domElement.offsetWidth,
+      this.domElement.offsetHeight,
+      this.cubePos,
+      this.cubeDim
+    )
+    if (bbox.containsPoint(new THREE.Vector2(event.offsetX, event.offsetY))) {
+      const pos = this.calculatePosInViewport(
+        event.offsetX,
+        event.offsetY,
+        bbox
+      )
+      this.checkSideTouch(pos.x, pos.y)
+      //this.prepareAnimationData(this.cube, this.center)
+      this.animating = true
+    }
+  }
+
+  private handleMouseMove(event: MouseEvent) {
+    const bbox = this.calculateViewportBbox(
+      this.domElement.offsetWidth,
+      this.domElement.offsetHeight,
+      this.cubePos,
+      this.cubeDim
+    )
+    if (bbox.containsPoint(new THREE.Vector2(event.offsetX, event.offsetY))) {
+      const pos = this.calculatePosInViewport(
+        event.offsetX,
+        event.offsetY,
+        bbox
+      )
+      this.checkSideOver(pos.x, pos.y)
+    }
+  }
+
+  private calculatePosInViewport(
+    offsetX: number,
+    offsetY: number,
+    bbox: THREE.Box2
+  ) {
+    const x = ((offsetX - bbox.min.x) / this.cubeDim) * 2 - 1
+    const y = -((offsetY - bbox.min.y) / this.cubeDim) * 2 + 1
+    return { x, y }
   }
 
   private checkSideTouch(x: number, y: number) {
     const raycaster = new THREE.Raycaster()
-    raycaster.setFromCamera(new THREE.Vector2(x, y), this._cubeCamera)
-    const intersects = raycaster.intersectObjects(this._cube.children, true)
+    raycaster.setFromCamera(new THREE.Vector2(x, y), this.cubeCamera)
+    const intersects = raycaster.intersectObjects(this.cube.children, true)
     if (intersects.length) {
       for (const { object } of intersects) {
         if (object.name) {
-          this.rotateTheCube(object.name)
+          this.prepareAnimationData(object.name, this.center)
           break
         }
       }
     }
   }
 
-  private rotateTheCube(side: string) {
-    switch (side) {
-      case FACES.FRONT:
-        this.setCubeAngles(0, 0, 0)
-        break
-      case FACES.RIGHT:
-        this.setCubeAngles(0, -90, 0)
-        break
-      case FACES.BACK:
-        this.setCubeAngles(0, -180, 0)
-        break
-      case FACES.LEFT:
-        this.setCubeAngles(0, -270, 0)
-        break
-      case FACES.TOP:
-        this.setCubeAngles(90, 0, 0)
-        break
-      case FACES.BOTTOM:
-        this.setCubeAngles(-90, 0, 0)
-        break
-
-      case FACES.TOP_FRONT_EDGE:
-        this.setCubeAngles(45, 0, 0)
-        break
-      case FACES.TOP_RIGHT_EDGE:
-        this.setCubeAngles(45, -90, 0)
-        break
-      case FACES.TOP_BACK_EDGE:
-        this.setCubeAngles(45, -180, 0)
-        break
-      case FACES.TOP_LEFT_EDGE:
-        this.setCubeAngles(45, -270, 0)
-        break
-
-      case FACES.BOTTOM_FRONT_EDGE:
-        this.setCubeAngles(-45, 0, 0)
-        break
-      case FACES.BOTTOM_RIGHT_EDGE:
-        this.setCubeAngles(-45, -90, 0)
-        break
-      case FACES.BOTTOM_BACK_EDGE:
-        this.setCubeAngles(-45, -180, 0)
-        break
-      case FACES.BOTTOM_LEFT_EDGE:
-        this.setCubeAngles(-45, -270, 0)
-        break
-
-      case FACES.FRONT_RIGHT_EDGE:
-        this.setCubeAngles(0, -45, 0)
-        break
-      case FACES.BACK_RIGHT_EDGE:
-        this.setCubeAngles(0, -135, 0)
-        break
-      case FACES.BACK_LEFT_EDGE:
-        this.setCubeAngles(0, -225, 0)
-        break
-      case FACES.FRONT_LEFT_EDGE:
-        this.setCubeAngles(0, -315, 0)
-        break
-
-      case FACES.TOP_FRONT_RIGHT_CORNER:
-        this.setCubeAngles(45, -45, 0)
-        break
-      case FACES.TOP_BACK_RIGHT_CORNER:
-        this.setCubeAngles(45, -135, 0)
-        break
-      case FACES.TOP_BACK_LEFT_CORNER:
-        this.setCubeAngles(45, -225, 0)
-        break
-      case FACES.TOP_FRONT_LEFT_CORNER:
-        this.setCubeAngles(45, -315, 0)
-        break
-
-      case FACES.BOTTOM_FRONT_RIGHT_CORNER:
-        this.setCubeAngles(-45, -45, 0)
-        break
-      case FACES.BOTTOM_BACK_RIGHT_CORNER:
-        this.setCubeAngles(-45, -135, 0)
-        break
-      case FACES.BOTTOM_BACK_LEFT_CORNER:
-        this.setCubeAngles(-45, -225, 0)
-        break
-      case FACES.BOTTOM_FRONT_LEFT_CORNER:
-        this.setCubeAngles(-45, -315, 0)
-        break
-
-      default:
-        break
-    }
-  }
-
-  private setCubeAngles(
-    x: number,
-    y: number,
-    z: number,
-    triggerEvent: boolean = true
-  ) {
-    const base = this._cube.rotation
-    this._animation = {
-      base: {
-        x: base.x,
-        y: base.y,
-        z: base.z
-      },
-      delta: {
-        x: calculateAngleDelta(base.x, THREE.MathUtils.degToRad(x)),
-        y: calculateAngleDelta(base.y, THREE.MathUtils.degToRad(y)),
-        z: calculateAngleDelta(base.z, THREE.MathUtils.degToRad(z))
-      },
-      duration: 500,
-      time: Date.now()
-    }
-    if (triggerEvent) {
-      this.dispatchEvent({
-        type: 'start',
-        quaternion: this._cube.quaternion.clone()
-      })
-    }
-  }
-
-  private handleMouseMove(event: MouseEvent) {
-    const target = event.target as HTMLElement
-    const x = (event.offsetX / target.clientWidth) * 2 - 1
-    const y = -(event.offsetY / target.clientHeight) * 2 + 1
-    this.checkSideOver(x, y)
-  }
-
   private checkSideOver(x: number, y: number) {
     const raycaster = new THREE.Raycaster()
-    raycaster.setFromCamera(new THREE.Vector2(x, y), this._cubeCamera)
-    const intersects = raycaster.intersectObjects(this._cube.children, true)
+    raycaster.setFromCamera(new THREE.Vector2(x, y), this.cubeCamera)
+    const intersects = raycaster.intersectObjects(this.cube.children, true)
     // unhover
-    this._cube.traverse(function (obj) {
+    this.cube.traverse(function (obj) {
       if (obj.name) {
         const mesh = obj as THREE.Mesh
-        ;(mesh.material as THREE.MeshBasicMaterial).color.setHex(MAINCOLOR)
+        ;(mesh.material as THREE.MeshBasicMaterial).color.setHex(MAIN_COLOR)
       }
     })
     // check hover
@@ -254,7 +235,7 @@ export class ViewCubeControls extends THREE.EventDispatcher<ViewCubeEvent> {
             if (child.name === object.name) {
               const mesh = child as THREE.Mesh
               ;(mesh.material as THREE.MeshBasicMaterial).color.setHex(
-                ACCENTCOLOR
+                HOVER_COLOR
               )
             }
           })
@@ -264,59 +245,179 @@ export class ViewCubeControls extends THREE.EventDispatcher<ViewCubeEvent> {
     }
   }
 
-  update() {
-    this._renderer.render(this._scene, this._cubeCamera)
-    this.animate()
-  }
-
-  private animate() {
-    if (!this._animation) return
-    const now = Date.now()
-    const { duration, time } = this._animation
-    const alpha = Math.min((now - time) / duration, 1)
-    this.animateCubeRotation(this._animation, alpha)
-    if (alpha == 1) {
-      this._animation = null
-      this.dispatchEvent({
-        type: 'end',
-        quaternion: this._cube.quaternion.clone()
-      })
-    } else {
-      this.dispatchEvent({
-        type: 'change',
-        quaternion: this._cube.quaternion.clone()
-      })
+  private calculateViewportPos(
+    canvasWidth: number,
+    canvasHeight: number,
+    pos: ViewCubePos,
+    length: number
+  ) {
+    let x = canvasWidth - length
+    let y = canvasHeight - length
+    switch (pos) {
+      case ViewCubePos.LEFT_BOTTOM:
+        x = 0
+        y = 0
+        break
+      case ViewCubePos.LEFT_TOP:
+        x = 0
+        break
+      case ViewCubePos.RIGHT_BOTTOM:
+        y = 0
+        break
     }
+    return { x, y }
   }
 
-  private animateCubeRotation(animation: Animation, alpha: number) {
-    const { base, delta } = animation
-    const ease = (Math.sin((alpha * 2 - 1) * Math.PI * 0.5) + 1) * 0.5
-    const angleX = -TWOPI + base.x + delta.x * ease
-    const angleY = -TWOPI + base.y + delta.y * ease
-    const angleZ = -TWOPI + base.z + delta.z * ease
-    this._cube.rotation.set(angleX % TWOPI, angleY % TWOPI, angleZ % TWOPI)
+  private calculateViewportBbox(
+    canvasWidth: number,
+    canvasHeight: number,
+    pos: ViewCubePos,
+    length: number
+  ) {
+    const bbox = new THREE.Box2(
+      new THREE.Vector2(canvasWidth - length, 0),
+      new THREE.Vector2(canvasWidth, length)
+    )
+    switch (pos) {
+      case ViewCubePos.LEFT_BOTTOM:
+        bbox.set(
+          new THREE.Vector2(0, canvasHeight - length),
+          new THREE.Vector2(length, canvasHeight)
+        )
+        break
+      case ViewCubePos.LEFT_TOP:
+        bbox.set(new THREE.Vector2(0, 0), new THREE.Vector2(length, length))
+        break
+      case ViewCubePos.RIGHT_BOTTOM:
+        bbox.set(
+          new THREE.Vector2(canvasWidth - length, canvasHeight - length),
+          new THREE.Vector2(canvasWidth, canvasHeight)
+        )
+        break
+    }
+    return bbox
   }
 
-  setQuaternion(quaternion: THREE.Quaternion) {
-    this._cube.setRotationFromQuaternion(quaternion)
-  }
+  private prepareAnimationData(side: string, focusPoint: THREE.Vector3Like) {
+    switch (side) {
+      case FACES.FRONT:
+        this.targetPosition.set(0, 0, 1)
+        this.targetQuaternion.setFromEuler(new THREE.Euler())
+        break
+      case FACES.RIGHT:
+        this.targetPosition.set(1, 0, 0)
+        this.targetQuaternion.setFromEuler(new THREE.Euler(0, Math.PI * 0.5, 0))
+        break
+      case FACES.BACK:
+        this.targetPosition.set(0, 0, -1)
+        this.targetQuaternion.setFromEuler(new THREE.Euler(0, Math.PI, 0))
+        break
+      case FACES.LEFT:
+        this.targetPosition.set(-1, 0, 0)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(0, -Math.PI * 0.5, 0)
+        )
+        break
+      case FACES.TOP:
+        this.targetPosition.set(0, 1, 0)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.5, 0, 0)
+        )
+        break
+      case FACES.BOTTOM:
+        this.targetPosition.set(0, -1, 0)
+        this.targetQuaternion.setFromEuler(new THREE.Euler(Math.PI * 0.5, 0, 0))
+        break
 
-  getObject() {
-    return this._cube
-  }
-}
+      case FACES.TOP_FRONT_EDGE:
+        this.targetPosition.set(0, 1, 1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, 0, 0)
+        )
+        break
+      case FACES.TOP_RIGHT_EDGE:
+        this.targetPosition.set(1, 1, 0)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, Math.PI * 0.5, 0, 'YXZ')
+        )
+        break
+      case FACES.TOP_BACK_EDGE:
+        this.targetPosition.set(0, 1, -1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, Math.PI, 0, 'YXZ')
+        )
+        break
+      case FACES.TOP_LEFT_EDGE:
+        this.targetPosition.set(-1, 1, 0)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, -Math.PI * 0.5, 0, 'YXZ')
+        )
+        break
 
-const TWOPI = 2 * Math.PI
+      case FACES.BOTTOM_FRONT_EDGE:
+        this.targetPosition.set(0, -1, 1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, 0, 0)
+        )
+        break
+      case FACES.BOTTOM_RIGHT_EDGE:
+        this.targetPosition.set(1, -1, 0)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, Math.PI * 0.5, 0, 'YXZ')
+        )
+        break
+      case FACES.BOTTOM_BACK_EDGE:
+        this.targetPosition.set(0, -1, -1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, Math.PI, 0, 'YXZ')
+        )
+        break
+      case FACES.BOTTOM_LEFT_EDGE:
+        this.targetPosition.set(-1, -1, 0)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, -Math.PI * 0.5, 0, 'YXZ')
+        )
+        break
 
-function calculateAngleDelta(from: number, to: number) {
-  const direct = to - from
-  const altA = direct - TWOPI
-  const altB = direct + TWOPI
-  if (Math.abs(direct) > Math.abs(altA)) {
-    return altA
-  } else if (Math.abs(direct) > Math.abs(altB)) {
-    return altB
+      case FACES.FRONT_RIGHT_EDGE:
+        this.targetPosition.set(1, 0, 1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(0, Math.PI * 0.25, 0)
+        )
+        break
+      case FACES.BACK_RIGHT_EDGE:
+        this.targetPosition.set(1, 0, -1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(0, Math.PI * 0.75, 0)
+        )
+        break
+      case FACES.BACK_LEFT_EDGE:
+        this.targetPosition.set(-1, 0, -1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(0, -Math.PI * 0.75, 0)
+        )
+        break
+      case FACES.FRONT_LEFT_EDGE:
+        this.targetPosition.set(-1, 0, 1)
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(0, -Math.PI * 0.25, 0)
+        )
+        break
+      default:
+        console.error('ViewCubeControls: Invalid face, edge, or corner name!')
+        break
+    }
+
+    this.radius = this.camera.position.distanceTo(focusPoint)
+    this.targetPosition.multiplyScalar(this.radius).add(focusPoint)
+
+    const dummy = new THREE.Object3D()
+    dummy.position.copy(focusPoint)
+
+    dummy.lookAt(this.camera.position)
+    this.q1.copy(dummy.quaternion)
+
+    dummy.lookAt(this.targetPosition)
+    this.q2.copy(dummy.quaternion)
   }
-  return direct
 }
