@@ -16,7 +16,7 @@
     "build": "nx run-many -t build",
     "lint": "nx run-many -t lint",
     "lint:fix": "eslint -c ./.eslintrc.js --ext .ts,.js,.vue --fix --quiet packages/",
-    "publish": "pnpm lint clean && && npm publish --dry-run --filter three-viewcube --access public"
+    "publish": "pnpm lint clean && pnpm publish --filter three-viewcube --access public"
   },
   "engines": {
     "pnpm": ">=8"

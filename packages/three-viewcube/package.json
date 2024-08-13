@@ -14,7 +14,7 @@
   "files": [
     "dist",
     "lib",
-    "LICENSE",
+    "src",
     "package.json"
   ],
   "main": "./dist/viewcube.umd.cjs",

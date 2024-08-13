@@ -7,6 +7,8 @@ A highly customizable standalone view cube addon for three.js with the following
 - Customize size of view cube
 - Customize text shown in each face of view. It can be used for internalization.
 
+<img src="./doc/viewcube.jpg" width="423" height="223" alt="ViewCube Example">
+
 ## Installation
 
 You can install **Three ViewCube** via npm:
