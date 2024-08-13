@@ -1,7 +1,7 @@
 {
   "name": "mlightcad",
   "version": "0.0.1",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": "MLight Lee <mlight.lee@outlook.com>",
   "repository": {
     "type": "git",

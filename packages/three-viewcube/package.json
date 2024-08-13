@@ -1,11 +1,14 @@
 {
   "name": "@mlightcad/three-viewcube",
-  "private": true,
   "version": "0.0.1",
+  "license": "MIT",
   "type": "module",
   "files": [
     "dist",
-    "lib"
+    "lib",
+    "LICENSE",
+    "package.json",
+    "src"
   ],
   "main": "./dist/viewcube.umd.cjs",
   "module": "./dist/viewcube.js",
