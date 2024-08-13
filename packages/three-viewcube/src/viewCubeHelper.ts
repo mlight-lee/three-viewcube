@@ -1,11 +1,21 @@
 import * as THREE from 'three'
-import { DEFAULT_FACENAMES, FACES, FaceNames } from './viewCubeData'
+import { DEFAULT_FACENAMES, FaceNames } from './faceNames'
+import { FACES } from './viewCubeData'
 import { ViewCube } from './viewCube'
 
 const MAIN_COLOR = 0xdddddd
 const HOVER_COLOR = 0xf2f5ce
 const OUTLINE_COLOR = 0xcccccc
 
+interface OrbitControlsLike {
+  target: THREE.Vector3
+  addEventListener: (eventName: string, listener: () => void) => void
+  removeEventListener: (eventName: string, listener: () => void) => void
+}
+
+/**
+ * Enum to define postion of view cube.
+ */
 export enum ViewCubePos {
   LEFT_BOTTOM = 0,
   LEFT_TOP = 1,
@@ -13,15 +23,40 @@ export enum ViewCubePos {
   RIGHT_BOTTOM = 4
 }
 
+/**
+ * Options to customize view cube
+ */
 export interface ViewCubeOptions {
+  /**
+   *Position of view cube
+   */
   pos?: ViewCubePos
+  /**
+   * Size of area ocupied by view cube. Because width and height of this area is same, it is single value.
+   * The real size of view cube will be calculated automatically considering rotation.
+   */
   dimension?: number
+  /**
+   * Face color of view cube
+   */
   faceColor?: number
+  /**
+   * Color when hovering on face, edge, and corner of view cube
+   */
   hoverColor?: number
+  /**
+   * Edge color of view cube
+   */
   outlineColor?: number
+  /**
+   * Text in each face of view cube
+   */
   faceNames?: FaceNames
 }
 
+/**
+ * Default option values
+ */
 export const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
   pos: ViewCubePos.RIGHT_TOP,
   dimension: 150,
@@ -31,25 +66,38 @@ export const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
   faceNames: DEFAULT_FACENAMES
 }
 
-export class ViewCubeControls extends THREE.Object3D {
+const clock = new THREE.Clock()
+
+/**
+ * A highly customizable standalone view cube addon for three.js.
+ */
+export class ViewCubeHelper extends THREE.Object3D {
   private cube: ViewCube
   private cubePos: ViewCubePos
   private cubeDim: number
   private cubeCamera: THREE.OrthographicCamera
+  private renderer: THREE.WebGLRenderer
   private camera: THREE.PerspectiveCamera | THREE.OrthographicCamera
   private domElement: HTMLElement
   private animating: boolean
   private turnRate: number
   private radius: number
-  private targetPosition: THREE.Vector3
   private targetQuaternion: THREE.Quaternion
   private q1: THREE.Quaternion
   private q2: THREE.Quaternion
+  private controls: OrbitControlsLike | undefined
+  private controlsChangeEvent: { listener: () => void }
+  private target: THREE.Vector3
 
-  public center: THREE.Vector3
+  /**
+   * Construct one instance of view cube helper
+   * @param camera Camera used in your canvas
+   * @param renderer Renderer used in your canvas
+   * @param options Options to customize view cube helper
+   */
   constructor(
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
-    domElement: HTMLElement,
+    renderer: THREE.WebGLRenderer,
     options: ViewCubeOptions = DEFAULT_VIEWCUBE_OPTIONS
   ) {
     super()
@@ -69,12 +117,10 @@ export class ViewCubeControls extends THREE.Object3D {
     this.add(this.cube)
 
     this.camera = camera
-    this.domElement = domElement
+    this.renderer = renderer
+    this.domElement = renderer.domElement
     this.animating = false
-    this.center = new THREE.Vector3()
-
-    // const raycaster = new THREE.Raycaster()
-    // const mouse = new THREE.Vector2()
+    this.target = new THREE.Vector3()
 
     this.cubeCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0, 4)
     this.cubeCamera.position.set(0, 0, 2)
@@ -84,49 +130,76 @@ export class ViewCubeControls extends THREE.Object3D {
 
     this.turnRate = 2 * Math.PI // turn rate in angles per second
 
-    this.targetPosition = new THREE.Vector3()
     this.targetQuaternion = new THREE.Quaternion()
 
     this.q1 = new THREE.Quaternion()
     this.q2 = new THREE.Quaternion()
     this.radius = 0
 
+    this.controlsChangeEvent = { listener: () => this.updateOrientation() }
+
     this.handleMouseMove = this.handleMouseMove.bind(this)
     this.handleMouseClick = this.handleMouseClick.bind(this)
-    this.listen(domElement)
+    this.listen(this.domElement)
   }
 
-  render(renderer: THREE.WebGLRenderer) {
-    this.quaternion.copy(this.camera.quaternion).invert()
-    this.updateMatrixWorld()
+  /**
+   * Set associated obit controls
+   * @param controls The associated orbit controls
+   */
+  setControls(controls: OrbitControlsLike) {
+    if (this.controls) {
+      this.controls.removeEventListener(
+        'change',
+        this.controlsChangeEvent.listener
+      )
+      this.target = new THREE.Vector3()
+    }
+
+    if (!controls) return
+
+    this.controls = controls
+    controls.addEventListener('change', this.controlsChangeEvent.listener)
+    this.target = controls.target
+  }
+
+  /**
+   * Render this view cube
+   */
+  render() {
+    const delta = clock.getDelta()
+    if (this.animating) this.animate(delta)
 
     // Store autoClear flag value
-    const autoClear = renderer.autoClear;
-    renderer.autoClear = false;
+    const autoClear = this.renderer.autoClear
+    this.renderer.autoClear = false
 
-    renderer.clearDepth()
+    this.renderer.clearDepth()
     const viewport = new THREE.Vector4()
-    renderer.getViewport(viewport)
-    const domElement = renderer.domElement
+    this.renderer.getViewport(viewport)
+    const domElement = this.renderer.domElement
     const pos = this.calculateViewportPos(
       domElement.offsetWidth,
       domElement.offsetHeight,
       this.cubePos,
       this.cubeDim
     )
-    renderer.setViewport(pos.x, pos.y, this.cubeDim, this.cubeDim)
-    renderer.render(this, this.cubeCamera)
-    renderer.setViewport(viewport.x, viewport.y, viewport.z, viewport.w)
-    this.update()
+    this.renderer.setViewport(pos.x, pos.y, this.cubeDim, this.cubeDim)
+    this.renderer.render(this, this.cubeCamera)
+    this.renderer.setViewport(viewport.x, viewport.y, viewport.z, viewport.w)
 
     // Restore autoClear flag vlaue
-    renderer.autoClear = autoClear;
+    this.renderer.autoClear = autoClear
   }
 
-  update() {
+  /**
+   * Animation loop
+   * @param delta The seconds passed since the time clock's oldTime was set and sets clock's oldTime to the
+   * current time.
+   */
+  private animate(delta: number) {
     if (this.animating === false) return
 
-    const delta = 0.1
     const step = delta * this.turnRate
 
     // animate position by doing a slerp and then scaling the position on the unit sphere
@@ -135,18 +208,29 @@ export class ViewCubeControls extends THREE.Object3D {
       .set(0, 0, 1)
       .applyQuaternion(this.q1)
       .multiplyScalar(this.radius)
-      .add(this.center)
+      .add(this.target)
 
     // animate orientation
     this.camera.quaternion.rotateTowards(this.targetQuaternion, step)
+
+    this.updateOrientation()
 
     if (this.q1.angleTo(this.q2) === 0) {
       this.animating = false
     }
   }
 
+  /**
+   * Free the GPU-related resources allocated by this instance. Call this method whenever this instance
+   * is no longer used in your app.
+   */
   dispose() {
     this.cube.dispose()
+  }
+
+  private updateOrientation() {
+    this.quaternion.copy(this.camera.quaternion).invert()
+    this.updateMatrixWorld()
   }
 
   private listen(domElement: HTMLElement) {
@@ -170,7 +254,6 @@ export class ViewCubeControls extends THREE.Object3D {
         bbox
       )
       this.checkSideTouch(pos.x, pos.y)
-      //this.prepareAnimationData(this.cube, this.center)
       this.animating = true
     }
   }
@@ -209,7 +292,7 @@ export class ViewCubeControls extends THREE.Object3D {
     if (intersects.length) {
       for (const { object } of intersects) {
         if (object.name) {
-          this.prepareAnimationData(object.name, this.center)
+          this.prepareAnimationData(object.name, this.target)
           break
         }
       }
@@ -299,117 +382,148 @@ export class ViewCubeControls extends THREE.Object3D {
   }
 
   private prepareAnimationData(side: string, focusPoint: THREE.Vector3Like) {
+    const targetPosition = new THREE.Vector3(0, 0, 1)
     switch (side) {
       case FACES.FRONT:
-        this.targetPosition.set(0, 0, 1)
         this.targetQuaternion.setFromEuler(new THREE.Euler())
         break
       case FACES.RIGHT:
-        this.targetPosition.set(1, 0, 0)
         this.targetQuaternion.setFromEuler(new THREE.Euler(0, Math.PI * 0.5, 0))
         break
       case FACES.BACK:
-        this.targetPosition.set(0, 0, -1)
         this.targetQuaternion.setFromEuler(new THREE.Euler(0, Math.PI, 0))
         break
       case FACES.LEFT:
-        this.targetPosition.set(-1, 0, 0)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(0, -Math.PI * 0.5, 0)
         )
         break
       case FACES.TOP:
-        this.targetPosition.set(0, 1, 0)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(-Math.PI * 0.5, 0, 0)
         )
         break
       case FACES.BOTTOM:
-        this.targetPosition.set(0, -1, 0)
         this.targetQuaternion.setFromEuler(new THREE.Euler(Math.PI * 0.5, 0, 0))
         break
 
       case FACES.TOP_FRONT_EDGE:
-        this.targetPosition.set(0, 1, 1)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(-Math.PI * 0.25, 0, 0)
         )
         break
       case FACES.TOP_RIGHT_EDGE:
-        this.targetPosition.set(1, 1, 0)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(-Math.PI * 0.25, Math.PI * 0.5, 0, 'YXZ')
         )
         break
       case FACES.TOP_BACK_EDGE:
-        this.targetPosition.set(0, 1, -1)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(-Math.PI * 0.25, Math.PI, 0, 'YXZ')
         )
         break
       case FACES.TOP_LEFT_EDGE:
-        this.targetPosition.set(-1, 1, 0)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(-Math.PI * 0.25, -Math.PI * 0.5, 0, 'YXZ')
         )
         break
 
       case FACES.BOTTOM_FRONT_EDGE:
-        this.targetPosition.set(0, -1, 1)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(Math.PI * 0.25, 0, 0)
         )
         break
       case FACES.BOTTOM_RIGHT_EDGE:
-        this.targetPosition.set(1, -1, 0)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(Math.PI * 0.25, Math.PI * 0.5, 0, 'YXZ')
         )
         break
       case FACES.BOTTOM_BACK_EDGE:
-        this.targetPosition.set(0, -1, -1)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(Math.PI * 0.25, Math.PI, 0, 'YXZ')
         )
         break
       case FACES.BOTTOM_LEFT_EDGE:
-        this.targetPosition.set(-1, -1, 0)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(Math.PI * 0.25, -Math.PI * 0.5, 0, 'YXZ')
         )
         break
 
       case FACES.FRONT_RIGHT_EDGE:
-        this.targetPosition.set(1, 0, 1)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(0, Math.PI * 0.25, 0)
         )
         break
       case FACES.BACK_RIGHT_EDGE:
-        this.targetPosition.set(1, 0, -1)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(0, Math.PI * 0.75, 0)
         )
         break
       case FACES.BACK_LEFT_EDGE:
-        this.targetPosition.set(-1, 0, -1)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(0, -Math.PI * 0.75, 0)
         )
         break
       case FACES.FRONT_LEFT_EDGE:
-        this.targetPosition.set(-1, 0, 1)
         this.targetQuaternion.setFromEuler(
           new THREE.Euler(0, -Math.PI * 0.25, 0)
         )
         break
+
+      case FACES.TOP_FRONT_RIGHT_CORNER:
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, -Math.PI * 1.75, 0)
+        )
+        break
+      case FACES.TOP_BACK_RIGHT_CORNER:
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, -Math.PI * 1.25, 0)
+        )
+        break
+      case FACES.TOP_BACK_LEFT_CORNER:
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, -Math.PI * 0.75, 0)
+        )
+        break
+      case FACES.TOP_FRONT_LEFT_CORNER:
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, -Math.PI * 0.25, 0)
+        )
+        break
+
+      case FACES.BOTTOM_FRONT_RIGHT_CORNER:
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, -Math.PI * 1.75, 0)
+        )
+        break
+      case FACES.BOTTOM_BACK_RIGHT_CORNER:
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, -Math.PI * 1.25, 0)
+        )
+        break
+      case FACES.BOTTOM_BACK_LEFT_CORNER:
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(-Math.PI * 0.25, -Math.PI * 0.75, 0)
+        )
+        break
+      case FACES.BOTTOM_FRONT_LEFT_CORNER:
+        this.targetQuaternion.setFromEuler(
+          new THREE.Euler(Math.PI * 0.25, -Math.PI * 0.25, 0)
+        )
+        break
+
       default:
-        console.error('ViewCubeControls: Invalid face, edge, or corner name!')
+        console.error(
+          `ViewCubeControls: Invalid face, edge, or corner name '${side}'!`
+        )
         break
     }
 
     this.radius = this.camera.position.distanceTo(focusPoint)
-    this.targetPosition.multiplyScalar(this.radius).add(focusPoint)
+    targetPosition
+      .applyQuaternion(this.targetQuaternion)
+      .multiplyScalar(this.radius)
+      .add(focusPoint)
 
     const dummy = new THREE.Object3D()
     dummy.position.copy(focusPoint)
@@ -417,7 +531,7 @@ export class ViewCubeControls extends THREE.Object3D {
     dummy.lookAt(this.camera.position)
     this.q1.copy(dummy.quaternion)
 
-    dummy.lookAt(this.targetPosition)
+    dummy.lookAt(targetPosition)
     this.q2.copy(dummy.quaternion)
   }
 }
