@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { FaceNames, ViewCubeControls } from '@mlightcad/three-viewcube'
+import { FaceNames, ViewCubeHelper } from '@mlightcad/three-viewcube'
 import { ViewCube } from '@mlightcad/three-viewcube'
 
 // Create scene
@@ -68,14 +68,14 @@ cameraControls.autoRotate = false
 cameraControls.update()
 
 // Create viewcube
-const viewCubeControls = new ViewCubeControls(camera, renderer)
-viewCubeControls.setControls(cameraControls)
+const viewCubeHelper = new ViewCubeHelper(camera, renderer)
+viewCubeHelper.setControls(cameraControls)
 
 function update() {
   requestAnimationFrame(update)
   renderer.clear()
   renderer.render(scene, camera)
-  viewCubeControls.render()
+  viewCubeHelper.render()
 }
 
 update()

@@ -1,45 +1,67 @@
 import * as THREE from 'three'
+import { DEFAULT_FACENAMES, FaceNames } from './faceNames'
 import {
   CORNER_FACES,
   createFaceMaterials,
-  DEFAULT_FACENAMES,
   EDGE_FACES,
-  EDGE_FACES_SIDE,
-  FaceNames
+  EDGE_FACES_SIDE
 } from './viewCubeData'
 
+/**
+ * View cube 3d object
+ */
 export class ViewCube extends THREE.Object3D {
   private _cubeSize: number
-  private _edgeSize: number
-  private _outline: boolean
+  private _borderSize: number
+  private _isShowOutline: boolean
   private _faceColor: number
   private _outlineColor: number
 
+  /**
+   * Construct one instance of view cube 3d object
+   * @param cubeSize Size of area ocupied by view cube
+   * @param borderSize Border size of view cube
+   * @param isShowOutline Flag to decide whether to show edge of view cube
+   * @param faceColor Face color of view cube
+   * @param outlineColor Edge color of view cube
+   * @param faceNames Texts in each face of view cube
+   */
   constructor(
-    size: number = 60,
-    edge: number = 5,
-    outline: boolean = true,
+    cubeSize: number = 60,
+    borderSize: number = 5,
+    isShowOutline: boolean = true,
     faceColor: number = 0xcccccc,
     outlineColor: number = 0x999999,
     faceNames: FaceNames = DEFAULT_FACENAMES
   ) {
     super()
-    this._cubeSize = size
-    this._edgeSize = edge
-    this._outline = outline
+    this._cubeSize = cubeSize
+    this._borderSize = borderSize
+    this._isShowOutline = isShowOutline
     this._faceColor = faceColor
     this._outlineColor = outlineColor
     this.build(faceNames)
   }
 
+  /**
+   * Free the GPU-related resources allocated by this instance. Call this method whenever this instance
+   * is no longer used in your app.
+   */
   dispose() {
-    // TODO: Finish it
+    this.children.forEach(child => {
+      const mesh = child as
+        | THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>
+        | THREE.LineSegments<THREE.EdgesGeometry, THREE.LineBasicMaterial>
+      mesh.material?.dispose()
+      mesh.material?.map?.dispose()
+      mesh.geometry?.dispose()
+    })
   }
 
   private build(faceNames: FaceNames) {
-    const faceSize = this._cubeSize - this._edgeSize * 2
+    const faceSize = this._cubeSize - this._borderSize * 2
     const faceOffset = this._cubeSize / 2
-    const borderSize = this._edgeSize
+    const borderSize = this._borderSize
 
     /* faces: front, right, back, left, top, bottom */
     const cubeFaces = this.createCubeFaces(faceSize, faceOffset)
@@ -120,7 +142,7 @@ export class ViewCube extends THREE.Object3D {
     }
     this.add(sideEdges)
 
-    if (this._outline) {
+    if (this._isShowOutline) {
       this.add(this.createCubeOutline(this._cubeSize))
     }
   }

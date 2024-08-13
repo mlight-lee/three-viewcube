@@ -1,3 +1,3 @@
-export * from './viewCubeData'
+export * from './faceNames'
 export * from './viewCube'
-export * from './viewCubeControls'
+export * from './viewCubeHelper'

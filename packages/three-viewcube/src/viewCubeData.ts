@@ -1,22 +1,6 @@
 import * as THREE from 'three'
+import { DEFAULT_FACENAMES, FaceNames } from './faceNames'
 
-export interface FaceNames {
-  top: string
-  front: string
-  right: string
-  back: string
-  left: string
-  bottom: string
-}
-
-export const DEFAULT_FACENAMES: FaceNames = {
-  top: 'TOP',
-  front: 'FRONT',
-  right: 'RIGHT',
-  back: 'BACK',
-  left: 'LEFT',
-  bottom: 'BOTTOM'
-}
 function createTextSprite(
   text: string,
   props: {
