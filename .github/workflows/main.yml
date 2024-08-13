@@ -33,9 +33,5 @@ jobs:
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # - run: pnpm exec nx-cloud record -- echo Hello World
       - run: pnpm lint
+      - run: pnpm build
 
-      # The correct way should run command "pnpm build". However, I don't know why
-      # "nx runmany" can't gurantee build order in github CI. So I have to run each
-      # project one by one.
-      - run: pnpm exec nx run @mlightcad/three-viewcube:build
-      - run: pnpm exec nx run @mlightcad/three-viewcube-demo:build
