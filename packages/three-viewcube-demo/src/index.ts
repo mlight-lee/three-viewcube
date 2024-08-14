@@ -68,7 +68,7 @@ cameraControls.autoRotate = false
 cameraControls.update()
 
 // Create viewcube
-const viewCubeHelper = new ViewCubeHelper(camera, renderer)
+const viewCubeHelper = new ViewCubeHelper(camera, renderer, { faceNames })
 viewCubeHelper.setControls(cameraControls)
 
 function update() {

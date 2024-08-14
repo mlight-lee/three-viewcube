@@ -1,12 +1,14 @@
 {
   "name": "mlightcad",
   "version": "0.0.1",
+  "description": "A highly customizable standalone view cube addon for three.js",
   "license": "MIT",
   "author": "MLight Lee <mlight.lee@outlook.com>",
   "repository": {
     "type": "git",
-    "url": "git://github.com/mlight-lee/MLightCAD"
+    "url": "git://github.com/mlight-lee/three-viewcube"
   },
+  "keywords": ["viewcube", "three", "three.js", "cad", "mlight", "mlightcad"],
   "scripts": {
     "dev": "nx run @mlightcad/three-viewcube-demo:dev",
     "format": "prettier --config ./.prettierrc.js --write packages/**/*.{ts,js,vue,json}",
@@ -14,7 +16,7 @@
     "build": "nx run-many -t build",
     "lint": "nx run-many -t lint",
     "lint:fix": "eslint -c ./.eslintrc.js --ext .ts,.js,.vue --fix --quiet packages/",
-    "test": "jest"
+    "publish": "pnpm lint clean && pnpm publish --filter three-viewcube --access public"
   },
   "engines": {
     "pnpm": ">=8"

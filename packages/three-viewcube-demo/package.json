@@ -1,8 +1,15 @@
 {
   "name": "@mlightcad/three-viewcube-demo",
-  "private": false, 
-  "version": "0.0.1",
+  "description": "View cube demo",
   "license": "MIT",
+  "private": false,
+  "version": "0.0.1",
+  "author": "MLight Lee <mlight.lee@outlook.com>",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mlight-lee/three-viewcube"
+  },
+  "keywords": ["viewcube", "three", "three.js", "cad", "mlight", "mlightcad"],
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,7 +21,7 @@
     "@types/three": "^0.166.0"
   },
   "dependencies": {
-    "@mlightcad/three-viewcube": "0.0.1",
+    "@mlightcad/three-viewcube": "workplace: *",
     "three": "^0.166.1"
   }
 }

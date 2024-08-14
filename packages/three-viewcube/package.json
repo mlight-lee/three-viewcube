@@ -1,11 +1,21 @@
 {
   "name": "@mlightcad/three-viewcube",
+  "description": "A highly customizable standalone view cube addon for three.js",
+  "license": "MIT",
   "private": false,
   "version": "0.0.1",
+  "author": "MLight Lee <mlight.lee@outlook.com>",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mlight-lee/three-viewcube"
+  },
+  "keywords": ["viewcube", "three", "three.js", "cad", "mlight", "mlightcad"],
   "type": "module",
   "files": [
     "dist",
-    "lib"
+    "lib",
+    "src",
+    "package.json"
   ],
   "main": "./dist/viewcube.umd.cjs",
   "module": "./dist/viewcube.js",

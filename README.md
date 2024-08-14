@@ -1,6 +1,14 @@
 <h1 align="center">ViewCube for Three.js</h1>
 
-A highly customizable standalone view cube addon for three.js. 
+A highly customizable standalone view cube addon for three.js with the following features:
+
+- Customize face, edge, and corner color
+- Customize position of view cube
+- Customize size of view cube
+- Customize text shown in each face of view. It can be used for internalization.
+
+<img src="./doc/viewcube.jpg" width="423" height="223" alt="ViewCube Example">
+
 ## Installation
 
 You can install **Three ViewCube** via npm:
@@ -48,7 +56,7 @@ You can customize view cube by passing one `ViewCubeOptions` instance when creat
  */
 export interface ViewCubeOptions {
   /**
-   *Position of view cube
+   * Position of view cube
    */
   pos?: ViewCubePos
   /**
