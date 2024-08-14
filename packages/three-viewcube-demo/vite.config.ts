@@ -10,6 +10,7 @@ export default defineConfig(({ command }) => {
     })
   }
   return {
+    base: "./",
     resolve: {
       alias: aliases
     },
