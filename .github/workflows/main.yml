@@ -1,3 +1,4 @@
+# Workflow for lint and building viewcube project
 name: main
 
 on:
