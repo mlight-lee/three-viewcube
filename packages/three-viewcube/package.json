@@ -3,7 +3,7 @@
   "description": "A highly customizable standalone view cube addon for three.js",
   "license": "MIT",
   "private": false,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "MLight Lee <mlight.lee@outlook.com>",
   "repository": {
     "type": "git",
@@ -21,8 +21,10 @@
   "type": "module",
   "files": [
     "dist",
-    "lib",
+    "lib/*.js",
+    "lib/*.ts",
     "src",
+    "README.md",
     "package.json"
   ],
   "main": "./dist/viewcube.umd.cjs",

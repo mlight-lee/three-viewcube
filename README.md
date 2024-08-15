@@ -9,6 +9,8 @@ A highly customizable standalone view cube addon for three.js with the following
 
 <img src="./doc/viewcube.jpg" width="423" height="223" alt="ViewCube Example">
 
+You can play with it through [this live demo](https://mlight-lee.github.io/three-viewcube/).
+
 ## Installation
 
 You can install **Three ViewCube** via npm:
