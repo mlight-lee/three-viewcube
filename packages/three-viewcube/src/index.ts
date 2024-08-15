@@ -1,3 +1,5 @@
 export * from './faceNames'
+export * from './fixedPosObject'
 export * from './viewCube'
 export * from './viewCubeHelper'
+export * from './axes2dHelper'

@@ -8,7 +8,15 @@
     "type": "git",
     "url": "git://github.com/mlight-lee/three-viewcube"
   },
-  "keywords": ["viewcube", "three", "three.js", "cad", "mlight", "mlightcad"],
+  "keywords": [
+    "viewcube",
+    "axes",
+    "three",
+    "three.js",
+    "cad",
+    "mlight",
+    "mlightcad"
+  ],
   "scripts": {
     "dev": "nx run @mlightcad/three-viewcube-demo:dev",
     "format": "prettier --config ./.prettierrc.js --write packages/**/*.{ts,js,vue,json}",
@@ -23,6 +31,7 @@
   },
   "private": false,
   "devDependencies": {
+    "@changesets/cli": "^2.27.7",
     "@nx/js": "19.3.1",
     "@types/node": "^20.14.9",
     "@typescript-eslint/eslint-plugin": "^7.14.1",

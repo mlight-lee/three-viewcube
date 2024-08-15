@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { DEFAULT_FACENAMES, FaceNames } from './faceNames'
 import { FACES } from './viewCubeData'
 import { ViewCube } from './viewCube'
+import { FixedPosObject, ObjectPosition } from './fixedPosObject'
 
 const MAIN_COLOR = 0xdddddd
 const HOVER_COLOR = 0xf2f5ce
@@ -14,23 +15,13 @@ interface OrbitControlsLike {
 }
 
 /**
- * Enum to define postion of view cube.
- */
-export enum ViewCubePos {
-  LEFT_BOTTOM = 0,
-  LEFT_TOP = 1,
-  RIGHT_TOP = 2,
-  RIGHT_BOTTOM = 4
-}
-
-/**
  * Options to customize view cube
  */
 export interface ViewCubeOptions {
   /**
-   *Position of view cube
+   * Position of view cube
    */
-  pos?: ViewCubePos
+  pos?: ObjectPosition
   /**
    * Size of area ocupied by view cube. Because width and height of this area is same, it is single value.
    * The real size of view cube will be calculated automatically considering rotation.
@@ -58,7 +49,7 @@ export interface ViewCubeOptions {
  * Default option values
  */
 export const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
-  pos: ViewCubePos.RIGHT_TOP,
+  pos: ObjectPosition.RIGHT_TOP,
   dimension: 150,
   faceColor: MAIN_COLOR,
   hoverColor: HOVER_COLOR,
@@ -66,20 +57,12 @@ export const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
   faceNames: DEFAULT_FACENAMES
 }
 
-const clock = new THREE.Clock()
-
 /**
  * A highly customizable standalone view cube addon for three.js.
  */
-export class ViewCubeHelper extends THREE.Object3D {
+export class ViewCubeHelper extends FixedPosObject {
   private cube: ViewCube
-  private cubePos: ViewCubePos
-  private cubeDim: number
-  private cubeCamera: THREE.OrthographicCamera
-  private renderer: THREE.WebGLRenderer
-  private camera: THREE.PerspectiveCamera | THREE.OrthographicCamera
   private domElement: HTMLElement
-  private animating: boolean
   private turnRate: number
   private radius: number
   private targetQuaternion: THREE.Quaternion
@@ -100,12 +83,12 @@ export class ViewCubeHelper extends THREE.Object3D {
     renderer: THREE.WebGLRenderer,
     options: ViewCubeOptions = DEFAULT_VIEWCUBE_OPTIONS
   ) {
-    super()
-
     const mergedOptions: ViewCubeOptions = {
       ...DEFAULT_VIEWCUBE_OPTIONS,
       ...options
     }
+    super(camera, renderer, options.dimension!, options.pos!)
+
     this.cube = new ViewCube(
       2,
       0.2,
@@ -119,14 +102,7 @@ export class ViewCubeHelper extends THREE.Object3D {
     this.camera = camera
     this.renderer = renderer
     this.domElement = renderer.domElement
-    this.animating = false
     this.target = new THREE.Vector3()
-
-    this.cubeCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0, 4)
-    this.cubeCamera.position.set(0, 0, 2)
-
-    this.cubeDim = mergedOptions.dimension!
-    this.cubePos = mergedOptions.pos!
 
     this.turnRate = 2 * Math.PI // turn rate in angles per second
 
@@ -164,40 +140,11 @@ export class ViewCubeHelper extends THREE.Object3D {
   }
 
   /**
-   * Render this view cube
-   */
-  render() {
-    const delta = clock.getDelta()
-    if (this.animating) this.animate(delta)
-
-    // Store autoClear flag value
-    const autoClear = this.renderer.autoClear
-    this.renderer.autoClear = false
-
-    this.renderer.clearDepth()
-    const viewport = new THREE.Vector4()
-    this.renderer.getViewport(viewport)
-    const domElement = this.renderer.domElement
-    const pos = this.calculateViewportPos(
-      domElement.offsetWidth,
-      domElement.offsetHeight,
-      this.cubePos,
-      this.cubeDim
-    )
-    this.renderer.setViewport(pos.x, pos.y, this.cubeDim, this.cubeDim)
-    this.renderer.render(this, this.cubeCamera)
-    this.renderer.setViewport(viewport.x, viewport.y, viewport.z, viewport.w)
-
-    // Restore autoClear flag vlaue
-    this.renderer.autoClear = autoClear
-  }
-
-  /**
    * Animation loop
    * @param delta The seconds passed since the time clock's oldTime was set and sets clock's oldTime to the
    * current time.
    */
-  private animate(delta: number) {
+  protected animate(delta: number) {
     if (this.animating === false) return
 
     const step = delta * this.turnRate
@@ -213,8 +160,6 @@ export class ViewCubeHelper extends THREE.Object3D {
     // animate orientation
     this.camera.quaternion.rotateTowards(this.targetQuaternion, step)
 
-    this.updateOrientation()
-
     if (this.q1.angleTo(this.q2) === 0) {
       this.animating = false
     }
@@ -228,11 +173,6 @@ export class ViewCubeHelper extends THREE.Object3D {
     this.cube.dispose()
   }
 
-  private updateOrientation() {
-    this.quaternion.copy(this.camera.quaternion).invert()
-    this.updateMatrixWorld()
-  }
-
   private listen(domElement: HTMLElement) {
     domElement.addEventListener('mousemove', this.handleMouseMove)
     domElement.addEventListener('click', this.handleMouseClick)
@@ -241,12 +181,7 @@ export class ViewCubeHelper extends THREE.Object3D {
   private handleMouseClick(event: MouseEvent) {
     if (this.animating === true) return false
 
-    const bbox = this.calculateViewportBbox(
-      this.domElement.offsetWidth,
-      this.domElement.offsetHeight,
-      this.cubePos,
-      this.cubeDim
-    )
+    const bbox = this.calculateViewportBbox()
     if (bbox.containsPoint(new THREE.Vector2(event.offsetX, event.offsetY))) {
       const pos = this.calculatePosInViewport(
         event.offsetX,
@@ -259,12 +194,7 @@ export class ViewCubeHelper extends THREE.Object3D {
   }
 
   private handleMouseMove(event: MouseEvent) {
-    const bbox = this.calculateViewportBbox(
-      this.domElement.offsetWidth,
-      this.domElement.offsetHeight,
-      this.cubePos,
-      this.cubeDim
-    )
+    const bbox = this.calculateViewportBbox()
     if (bbox.containsPoint(new THREE.Vector2(event.offsetX, event.offsetY))) {
       const pos = this.calculatePosInViewport(
         event.offsetX,
@@ -275,19 +205,9 @@ export class ViewCubeHelper extends THREE.Object3D {
     }
   }
 
-  private calculatePosInViewport(
-    offsetX: number,
-    offsetY: number,
-    bbox: THREE.Box2
-  ) {
-    const x = ((offsetX - bbox.min.x) / this.cubeDim) * 2 - 1
-    const y = -((offsetY - bbox.min.y) / this.cubeDim) * 2 + 1
-    return { x, y }
-  }
-
   private checkSideTouch(x: number, y: number) {
     const raycaster = new THREE.Raycaster()
-    raycaster.setFromCamera(new THREE.Vector2(x, y), this.cubeCamera)
+    raycaster.setFromCamera(new THREE.Vector2(x, y), this.objectCamera)
     const intersects = raycaster.intersectObjects(this.cube.children, true)
     if (intersects.length) {
       for (const { object } of intersects) {
@@ -301,7 +221,7 @@ export class ViewCubeHelper extends THREE.Object3D {
 
   private checkSideOver(x: number, y: number) {
     const raycaster = new THREE.Raycaster()
-    raycaster.setFromCamera(new THREE.Vector2(x, y), this.cubeCamera)
+    raycaster.setFromCamera(new THREE.Vector2(x, y), this.objectCamera)
     const intersects = raycaster.intersectObjects(this.cube.children, true)
     // unhover
     this.cube.traverse(function (obj) {
@@ -326,59 +246,6 @@ export class ViewCubeHelper extends THREE.Object3D {
         }
       }
     }
-  }
-
-  private calculateViewportPos(
-    canvasWidth: number,
-    canvasHeight: number,
-    pos: ViewCubePos,
-    length: number
-  ) {
-    let x = canvasWidth - length
-    let y = canvasHeight - length
-    switch (pos) {
-      case ViewCubePos.LEFT_BOTTOM:
-        x = 0
-        y = 0
-        break
-      case ViewCubePos.LEFT_TOP:
-        x = 0
-        break
-      case ViewCubePos.RIGHT_BOTTOM:
-        y = 0
-        break
-    }
-    return { x, y }
-  }
-
-  private calculateViewportBbox(
-    canvasWidth: number,
-    canvasHeight: number,
-    pos: ViewCubePos,
-    length: number
-  ) {
-    const bbox = new THREE.Box2(
-      new THREE.Vector2(canvasWidth - length, 0),
-      new THREE.Vector2(canvasWidth, length)
-    )
-    switch (pos) {
-      case ViewCubePos.LEFT_BOTTOM:
-        bbox.set(
-          new THREE.Vector2(0, canvasHeight - length),
-          new THREE.Vector2(length, canvasHeight)
-        )
-        break
-      case ViewCubePos.LEFT_TOP:
-        bbox.set(new THREE.Vector2(0, 0), new THREE.Vector2(length, length))
-        break
-      case ViewCubePos.RIGHT_BOTTOM:
-        bbox.set(
-          new THREE.Vector2(canvasWidth - length, canvasHeight - length),
-          new THREE.Vector2(canvasWidth, canvasHeight)
-        )
-        break
-    }
-    return bbox
   }
 
   private prepareAnimationData(side: string, focusPoint: THREE.Vector3Like) {
@@ -514,7 +381,7 @@ export class ViewCubeHelper extends THREE.Object3D {
 
       default:
         console.error(
-          `ViewCubeControls: Invalid face, edge, or corner name '${side}'!`
+          `ViewCubeHelper: Invalid face, edge, or corner name '${side}'!`
         )
         break
     }

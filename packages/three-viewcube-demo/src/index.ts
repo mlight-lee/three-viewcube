@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { FaceNames, ViewCubeHelper } from '@mlightcad/three-viewcube'
-import { ViewCube } from '@mlightcad/three-viewcube'
+import { Axes2dHelper, FaceNames, ViewCube, ViewCubeHelper } from '@mlightcad/three-viewcube'
 
 // Create scene
 const scene = new THREE.Scene()
@@ -71,11 +70,15 @@ cameraControls.update()
 const viewCubeHelper = new ViewCubeHelper(camera, renderer, { faceNames })
 viewCubeHelper.setControls(cameraControls)
 
+// Create 2d axes
+const axes2dHelper = new Axes2dHelper(camera, renderer)
+
 function update() {
   requestAnimationFrame(update)
   renderer.clear()
   renderer.render(scene, camera)
   viewCubeHelper.render()
+  axes2dHelper.render()
 }
 
 update()
