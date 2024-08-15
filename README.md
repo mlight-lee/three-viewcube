@@ -58,7 +58,7 @@ export interface ViewCubeOptions {
   /**
    * Position of view cube
    */
-  pos?: ViewCubePos
+  pos?: ObjectPosition
   /**
    * Size of area ocupied by view cube. Because width and height of this area is same, it is single value.
    * The real size of view cube will be calculated automatically considering rotation.
