@@ -67,7 +67,7 @@ importers:
   packages/three-viewcube-demo:
     dependencies:
       '@mlightcad/three-viewcube':
-        specifier: 'workplace: *'
+        specifier: ^0.0.2
         version: link:../three-viewcube
       three:
         specifier: ^0.166.1

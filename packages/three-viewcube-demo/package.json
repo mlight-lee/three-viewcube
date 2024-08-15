@@ -21,7 +21,7 @@
     "@types/three": "^0.166.0"
   },
   "dependencies": {
-    "@mlightcad/three-viewcube": "^0.0.1",
+    "@mlightcad/three-viewcube": "^0.0.2",
     "three": "^0.166.1"
   }
 }
