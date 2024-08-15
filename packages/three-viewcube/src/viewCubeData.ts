@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { DEFAULT_FACENAMES, FaceNames } from './faceNames'
 
-function createTextSprite(
+function createTextTexture(
   text: string,
   props: {
     font: string
@@ -47,46 +47,57 @@ function createTextSprite(
   return texture
 }
 
+export function createTextSprite(text: string) {
+  const texture = createTextTexture(text, {
+    fontSize: 100,
+    font: 'Arial Narrow, sans-serif',
+    color: [255, 255, 255, 1],
+    bgColor: [0, 0, 0, 0]
+  })
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true })
+  return new THREE.Sprite( material )
+}
+
 export function createFaceMaterials(faceNames: FaceNames = DEFAULT_FACENAMES) {
   const materials = [
     {
       name: FACES.FRONT,
-      map: createTextSprite(faceNames.front, {
+      map: createTextTexture(faceNames.front, {
         fontSize: 60,
         font: 'Arial Narrow, sans-serif'
       })
     },
     {
       name: FACES.RIGHT,
-      map: createTextSprite(faceNames.right, {
+      map: createTextTexture(faceNames.right, {
         fontSize: 60,
         font: 'Arial Narrow, sans-serif'
       })
     },
     {
       name: FACES.BACK,
-      map: createTextSprite(faceNames.back, {
+      map: createTextTexture(faceNames.back, {
         fontSize: 60,
         font: 'Arial Narrow, sans-serif'
       })
     },
     {
       name: FACES.LEFT,
-      map: createTextSprite(faceNames.left, {
+      map: createTextTexture(faceNames.left, {
         fontSize: 60,
         font: 'Arial Narrow, sans-serif'
       })
     },
     {
       name: FACES.TOP,
-      map: createTextSprite(faceNames.top, {
+      map: createTextTexture(faceNames.top, {
         fontSize: 60,
         font: 'Arial Narrow, sans-serif'
       })
     },
     {
       name: FACES.BOTTOM,
-      map: createTextSprite(faceNames.bottom, {
+      map: createTextTexture(faceNames.bottom, {
         fontSize: 60,
         font: 'Arial Narrow, sans-serif'
       })

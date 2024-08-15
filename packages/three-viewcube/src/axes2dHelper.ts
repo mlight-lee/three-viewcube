@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { createTextSprite } from './viewCubeData'
 import { FixedPosObject, ObjectPosition } from './fixedPosObject'
 
 /**
@@ -7,6 +8,8 @@ import { FixedPosObject, ObjectPosition } from './fixedPosObject'
  */
 export class Axes2dHelper extends FixedPosObject {
   private axes: THREE.LineSegments
+  private xText: THREE.Sprite
+  private yText: THREE.Sprite
 
   constructor(
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
@@ -17,14 +20,14 @@ export class Axes2dHelper extends FixedPosObject {
       0,
       0,
       0,
-      size,
+      2,
       0,
       0,
       0,
       0,
       0,
       0,
-      size,
+      2,
       0
     ]
 
@@ -40,10 +43,24 @@ export class Axes2dHelper extends FixedPosObject {
     })
 
     this.axes = new THREE.LineSegments(geometry, material)
+    this.axes.position.set(-1, -1, 0)
     this.add(this.axes)
+
+    this.xText = createTextSprite('X')
+    this.xText.position.set(1.5, -1, 0)
+    this.add(this.xText)
+
+    this.yText = createTextSprite('Y')
+    this.yText.position.set(-1, 1.5, 0)
+    this.add(this.yText)
   }
 
-  setColors(xAxisColor: THREE.Color, yAxisColor: THREE.Color) {
+  /**
+   * Set color of x-axis and y-axis
+   * @param xAxisColor color of x-axis
+   * @param yAxisColor color of y-axis
+   */
+  setLineColors(xAxisColor: THREE.Color, yAxisColor: THREE.Color) {
     const color = new THREE.Color()
     const array = this.axes.geometry.attributes.color.array
 
@@ -61,6 +78,15 @@ export class Axes2dHelper extends FixedPosObject {
   }
 
   /**
+   * Set text color
+   * @param color text color
+   */
+  setTextColor(color: THREE.Color) {
+    this.xText.material.color = color
+    this.yText.material.color = color
+  }
+
+  /**
    * Free the GPU-related resources allocated by this instance. Call this method whenever this instance
    * is no longer used in your app.
    */
@@ -68,5 +94,11 @@ export class Axes2dHelper extends FixedPosObject {
     this.axes.geometry.dispose()
     const material = this.axes.material as THREE.LineBasicMaterial
     material.dispose()
+
+    this.xText.geometry.dispose()
+    this.xText.material.dispose()
+
+    this.yText.geometry.dispose()
+    this.yText.material.dispose()
   }
 }

@@ -72,6 +72,7 @@ viewCubeHelper.setControls(cameraControls)
 
 // Create 2d axes
 const axes2dHelper = new Axes2dHelper(camera, renderer)
+axes2dHelper.setTextColor(new THREE.Color(0x00ff00))
 
 function update() {
   requestAnimationFrame(update)
