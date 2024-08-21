@@ -9,7 +9,14 @@
     "type": "git",
     "url": "git://github.com/mlight-lee/three-viewcube"
   },
-  "keywords": ["viewcube", "three", "three.js", "cad", "mlight", "mlightcad"],
+  "keywords": [
+    "viewcube",
+    "three",
+    "three.js",
+    "cad",
+    "mlight",
+    "mlightcad"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -21,7 +28,7 @@
     "@types/three": "^0.166.0"
   },
   "dependencies": {
-    "@mlightcad/three-viewcube": "^0.0.3",
+    "@mlightcad/three-viewcube": "^0.0.5",
     "three": "^0.166.1"
   }
 }

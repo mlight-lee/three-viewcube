@@ -55,7 +55,7 @@ export function createTextSprite(text: string) {
     bgColor: [0, 0, 0, 0]
   })
   const material = new THREE.SpriteMaterial({ map: texture, transparent: true })
-  return new THREE.Sprite( material )
+  return new THREE.Sprite(material)
 }
 
 export function createFaceMaterials(faceNames: FaceNames = DEFAULT_FACENAMES) {

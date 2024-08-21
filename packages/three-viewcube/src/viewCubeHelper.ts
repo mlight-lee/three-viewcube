@@ -160,7 +160,7 @@ export class ViewCubeHelper extends FixedPosObject {
     // animate orientation
     this.camera.quaternion.rotateTowards(this.targetQuaternion, step)
 
-    if (this.q1.angleTo(this.q2) === 0) {
+    if (this.q1.angleTo(this.q2) <= 0.00001) {
       this.animating = false
     }
   }
@@ -179,8 +179,6 @@ export class ViewCubeHelper extends FixedPosObject {
   }
 
   private handleMouseClick(event: MouseEvent) {
-    if (this.animating === true) return false
-
     const bbox = this.calculateViewportBbox()
     if (bbox.containsPoint(new THREE.Vector2(event.offsetX, event.offsetY))) {
       const pos = this.calculatePosInViewport(
