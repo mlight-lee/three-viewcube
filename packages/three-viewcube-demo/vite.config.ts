@@ -5,12 +5,12 @@ export default defineConfig(({ command }) => {
   const aliases: Alias[] = []
   if (command === 'serve') {
     aliases.push({
-      find: '@mlightcad/three-viewcube', 
+      find: '@mlightcad/three-viewcube',
       replacement: resolve(__dirname, '../three-viewcube/src')
     })
   }
   return {
-    base: "./",
+    base: './',
     resolve: {
       alias: aliases
     },

@@ -14,27 +14,18 @@ export class Axes2dHelper extends FixedPosObject {
   constructor(
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
     renderer: THREE.WebGLRenderer,
-    size = 100) {
+    size = 100
+  ) {
     super(camera, renderer, size, ObjectPosition.LEFT_BOTTOM)
-    const vertices = [
-      0,
-      0,
-      0,
-      2,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      2,
-      0
-    ]
+    const vertices = [0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0]
 
     const colors = [1, 0, 0, 1, 0.6, 0, 0, 1, 0, 0.6, 1, 0]
 
     const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(vertices, 3)
+    )
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
 
     const material = new THREE.LineBasicMaterial({
