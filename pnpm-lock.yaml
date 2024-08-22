@@ -67,11 +67,14 @@ importers:
   packages/three-viewcube-demo:
     dependencies:
       '@mlightcad/three-viewcube':
-        specifier: ^0.0.5
+        specifier: ^0.0.6
         version: link:../three-viewcube
       '@tweenjs/tween.js':
         specifier: ^25.0.0
         version: 25.0.0
+      lil-gui:
+        specifier: ^0.19.2
+        version: 0.19.2
       three:
         specifier: ^0.166.1
         version: 0.166.1
@@ -2041,6 +2044,9 @@ packages:
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
+
+  lil-gui@0.19.2:
+    resolution: {integrity: sha512-nU8j4ND702ouGfQZoaTN4dfXxacvGOAVK0DtmZBVcUYUAeYQXLQAjAN50igMHiba3T5jZyKEjXZU+Ntm1Qs6ZQ==}
 
   lilconfig@3.1.2:
     resolution: {integrity: sha512-eop+wDAvpItUys0FWkHIKeC9ybYrTGbU41U5K7+bttZZeohvnY7M9dZ5kB21GNWiFT2q1OoPTvncPCgSOVO5ow==}
@@ -5059,6 +5065,8 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
       type-check: 0.4.0
+
+  lil-gui@0.19.2: {}
 
   lilconfig@3.1.2: {}
 

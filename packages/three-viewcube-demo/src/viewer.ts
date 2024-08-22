@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import GUI from 'lil-gui'
 import {
   AxesGizmo,
   FaceNames,
@@ -11,12 +12,15 @@ import {
 export class Viewer {
   private _scene: THREE.Scene
   private _camera: THREE.PerspectiveCamera
-  private _renderer: THREE.WebGLRenderer
   private _cameraControls: OrbitControls
+  private _renderer: THREE.WebGLRenderer
   private _viewCubeGizmo: ViewCubeGizmo
   private _axesGizmo: AxesGizmo
   private _simpleCameraControls: SimpleCameraControls
   private _bbox: THREE.Box3
+
+  // This property is used to show camera direction in GUI only
+  private _cameraDirection!: THREE.Vector3
 
   constructor() {
     this._bbox = new THREE.Box3()
@@ -27,8 +31,10 @@ export class Viewer {
     this._simpleCameraControls = this.createSimpleCameraControls()
     this._viewCubeGizmo = this.createViewCubeGizmo()
     this._axesGizmo = this.createAxesGizmo()
+    this._cameraDirection = new THREE.Vector3()
     this.createLights()
     this.createObjects()
+    this.createGUI()
   }
 
   get camera() {
@@ -58,6 +64,7 @@ export class Viewer {
     this._viewCubeGizmo.update()
     this._axesGizmo.update()
     this._simpleCameraControls.update()
+    this.updateCameraDirection()
   }
 
   private createScene() {
@@ -162,5 +169,33 @@ export class Viewer {
     const axes2dGizmo = new AxesGizmo(this.camera, this.renderer)
     axes2dGizmo.setTextColor(new THREE.Color(0x00ff00))
     return axes2dGizmo
+  }
+
+  private createGUI() {
+    const gui = new GUI({ title: 'Debug GUI', width: 300, autoPlace: false })
+    const container = document.getElementById('gui')
+    container?.appendChild(gui.domElement)
+    const camera = this.camera
+
+    const cameraPositionFolder = gui.addFolder('Camera Position')
+    cameraPositionFolder.add(camera.position, 'x').listen()
+    cameraPositionFolder.add(camera.position, 'y').listen()
+    cameraPositionFolder.add(camera.position, 'z').listen()
+
+    const cameraRotationFolder = gui.addFolder('Camera Rotation')
+    cameraRotationFolder.add(camera.rotation, 'x',).listen()
+    cameraRotationFolder.add(camera.rotation, 'y').listen()
+    cameraRotationFolder.add(camera.rotation, 'z').listen()
+
+    const cameraDirectionFolder = gui.addFolder('Camera Direction')
+    cameraDirectionFolder.add(this._cameraDirection, 'x').listen()
+    cameraDirectionFolder.add(this._cameraDirection, 'y').listen()
+    cameraDirectionFolder.add(this._cameraDirection, 'z').listen()
+
+    gui.close()
+  }
+
+  private updateCameraDirection() {
+    this.camera.getWorldDirection(this._cameraDirection)
   }
 }
