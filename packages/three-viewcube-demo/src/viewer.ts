@@ -1,10 +1,11 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import {
-  Axes2dHelper,
+  AxesGizmo,
   FaceNames,
+  SimpleCameraControls,
   ViewCube,
-  ViewCubeHelper
+  ViewCubeGizmo
 } from '@mlightcad/three-viewcube'
 
 export class Viewer {
@@ -12,8 +13,9 @@ export class Viewer {
   private _camera: THREE.PerspectiveCamera
   private _renderer: THREE.WebGLRenderer
   private _cameraControls: OrbitControls
-  private _viewCubeHelper: ViewCubeHelper
-  private _axes2dHelper: Axes2dHelper
+  private _viewCubeGizmo: ViewCubeGizmo
+  private _axesGizmo: AxesGizmo
+  private _simpleCameraControls: SimpleCameraControls
   private _bbox: THREE.Box3
 
   constructor() {
@@ -22,8 +24,9 @@ export class Viewer {
     this._camera = this.createCamera()
     this._renderer = this.creatRenderer()
     this._cameraControls = this.createCameraControls()
-    this._viewCubeHelper = this.createViewCubeHelper()
-    this._axes2dHelper = this.createAxes2dHelper()
+    this._simpleCameraControls = this.createSimpleCameraControls()
+    this._viewCubeGizmo = this.createViewCubeGizmo()
+    this._axesGizmo = this.createAxesGizmo()
     this.createLights()
     this.createObjects()
   }
@@ -52,8 +55,9 @@ export class Viewer {
     requestAnimationFrame(this.animate.bind(this))
     this.renderer.clear()
     this.renderer.render(this.scene, this.camera)
-    this._viewCubeHelper.render()
-    this._axes2dHelper.render()
+    this._viewCubeGizmo.update()
+    this._axesGizmo.update()
+    this._simpleCameraControls.update()
   }
 
   private createScene() {
@@ -109,6 +113,12 @@ export class Viewer {
     return cameraControls
   }
 
+  private createSimpleCameraControls() {
+    const simpleCameraControls = new SimpleCameraControls(this.camera)
+    simpleCameraControls.setControls(this.cameraControls)
+    return simpleCameraControls
+  }
+
   private createObjects() {
     const planeGeometry = new THREE.PlaneGeometry(3, 3)
     const planeMaterial = new THREE.MeshLambertMaterial({
@@ -140,15 +150,17 @@ export class Viewer {
     if (axes.geometry.boundingBox) this._bbox.union(axes.geometry.boundingBox)
   }
 
-  private createViewCubeHelper() {
-    const viewCubeHelper = new ViewCubeHelper(this.camera, this.renderer)
-    viewCubeHelper.setControls(this.cameraControls)
-    return viewCubeHelper
+  private createViewCubeGizmo() {
+    const viewCubeGizmo = new ViewCubeGizmo(this.camera, this.renderer)
+    viewCubeGizmo.addEventListener('change', event => {
+      this._simpleCameraControls.flyTo(event.quaternion)
+    })
+    return viewCubeGizmo
   }
 
-  private createAxes2dHelper() {
-    const axes2dHelper = new Axes2dHelper(this.camera, this.renderer)
-    axes2dHelper.setTextColor(new THREE.Color(0x00ff00))
-    return axes2dHelper
+  private createAxesGizmo() {
+    const axes2dGizmo = new AxesGizmo(this.camera, this.renderer)
+    axes2dGizmo.setTextColor(new THREE.Color(0x00ff00))
+    return axes2dGizmo
   }
 }

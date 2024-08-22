@@ -1,25 +1,33 @@
 import * as THREE from 'three'
 import { createTextSprite } from './viewCubeData'
-import { FixedPosObject, ObjectPosition } from './fixedPosObject'
+import { FixedPosGizmo, ObjectPosition } from './fixedPosGizmo'
 
 /**
- * An axis object to visualize the 2 axes in a simple way.
- * The X axis is red and the Y axis is green by default
+ * An axis gizmo to visualize the axes in a simple way.
+ * The X axis is red, the Y axis is green, and the Z axis is blue by default
  */
-export class Axes2dHelper extends FixedPosObject {
+export class AxesGizmo extends FixedPosGizmo {
   private axes: THREE.LineSegments
   private xText: THREE.Sprite
   private yText: THREE.Sprite
+  private zText?: THREE.Sprite
+  private hasZAxis: boolean
 
   constructor(
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
     renderer: THREE.WebGLRenderer,
-    size = 100
+    size = 100,
+    hasZAxis = true
   ) {
     super(camera, renderer, size, ObjectPosition.LEFT_BOTTOM)
-    const vertices = [0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0]
+    this.hasZAxis = hasZAxis
 
+    const vertices = [0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0]
     const colors = [1, 0, 0, 1, 0.6, 0, 0, 1, 0, 0.6, 1, 0]
+    if (hasZAxis) {
+      vertices.push(0, 0, 0, 0, 0, 2)
+      colors.push(0, 0, 1, 0, 0.6, 1)
+    }
 
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(
@@ -34,16 +42,22 @@ export class Axes2dHelper extends FixedPosObject {
     })
 
     this.axes = new THREE.LineSegments(geometry, material)
-    this.axes.position.set(-1, -1, 0)
+    this.axes.position.set(-1, -1, -1)
     this.add(this.axes)
 
     this.xText = createTextSprite('X')
-    this.xText.position.set(1.5, -1, 0)
+    this.xText.position.set(1.5, -1, -1)
     this.add(this.xText)
 
     this.yText = createTextSprite('Y')
-    this.yText.position.set(-1, 1.5, 0)
+    this.yText.position.set(-1, 1.5, -1)
     this.add(this.yText)
+
+    if (hasZAxis) {
+      this.zText = createTextSprite('Z')
+      this.zText.position.set(-1, -1, 1.5)
+      this.add(this.zText)
+    }
   }
 
   /**
@@ -91,5 +105,10 @@ export class Axes2dHelper extends FixedPosObject {
 
     this.yText.geometry.dispose()
     this.yText.material.dispose()
+
+    if (this.hasZAxis) {
+      this.zText?.geometry.dispose()
+      this.zText?.material.dispose()
+    }
   }
 }
