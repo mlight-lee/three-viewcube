@@ -57,7 +57,7 @@ viewCubeGizmo.addEventListener('change', event => {
 })
 ```
 
-To correctly rotate current view, you need to consider bounding box of objects and camera (position, lookAt, movement, rotation) in current view and camera. Class `SimpleCameraControls` is provided to faciliate it. However, `SimpleCameraControls` just considers camera roation. You can refine `SimpleCameraControls` by yourselves.
+To correctly rotate current view, you need to consider bounding box of objects in current view and camera (position, lookAt, movement, rotation). Class `SimpleCameraControls` is provided to faciliate it. However, `SimpleCameraControls` just considers camera roation. You can refine `SimpleCameraControls` by yourselves.
 
 You can customize view cube by passing one `ViewCubeOptions` instance when creating one `ViewCubeGizmo` instance. Defintion of `ViewCubeOptions` is as follows.
 

@@ -30,6 +30,7 @@
   "dependencies": {
     "@mlightcad/three-viewcube": "^0.0.5",
     "@tweenjs/tween.js": "^25.0.0",
+    "lil-gui": "^0.19.2",
     "three": "^0.166.1"
   }
 }
