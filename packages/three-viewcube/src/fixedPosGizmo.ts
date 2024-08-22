@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
 /**
- * Enum to define postion of the object.
+ * Enum to define postion of the gizmo.
  */
 export enum ObjectPosition {
   LEFT_BOTTOM = 0,
@@ -10,26 +10,23 @@ export enum ObjectPosition {
   RIGHT_BOTTOM = 4
 }
 
-const clock = new THREE.Clock()
-
 /**
- * A customizable object with fixed postion in viewport
+ * A customizable gizmo with fixed postion in viewport
  */
-export class FixedPosObject extends THREE.Object3D {
-  protected objectCamera: THREE.OrthographicCamera
+export class FixedPosGizmo<TEventMap extends THREE.Object3DEventMap = THREE.Object3DEventMap> extends THREE.Object3D<TEventMap> {
+  protected gizmoCamera: THREE.OrthographicCamera
   protected renderer: THREE.WebGLRenderer
   protected camera: THREE.PerspectiveCamera | THREE.OrthographicCamera
-  protected objectDim: number
-  protected objectPos: ObjectPosition
-  protected animating: boolean
+  protected gizmoDim: number
+  protected gizmoPos: ObjectPosition
 
   /**
-   * Construct one instance of this class
+   * Construct one instance of this gizmo
    * @param camera Camera used in your canvas
    * @param renderer Renderer used in your canvas
-   * @param dimension Size of area ocupied by this object. Because width and height of this area is same, 
+   * @param dimension Size of area ocupied by this gizmo. Because width and height of this area is same, 
    * it is single value. The real size of the objet will be calculated automatically considering rotation.
-   * @param pos Position of the object
+   * @param pos Position of the gizmo
    */
   constructor(
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
@@ -42,27 +39,25 @@ export class FixedPosObject extends THREE.Object3D {
     this.camera = camera
     this.renderer = renderer
 
-    this.objectCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0, 4)
-    this.objectCamera.position.set(0, 0, 2)
+    this.gizmoCamera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0, 4)
+    this.gizmoCamera.position.set(0, 0, 2)
 
-    this.objectDim = dimension
-    this.objectPos = pos
-    this.animating = false
+    this.gizmoDim = dimension
+    this.gizmoPos = pos
+
+    this.initialize()
   }
 
   /**
-   * Function called by constructor to initialize the object. The children class can override this function
+   * Function called by constructor to initialize this gizmo. The children class can override this function
    * to add its own initialization logic.
    */
   initialize() {}
 
   /**
-   * Render this object
+   * Update and rerender this gizmo
    */
-  render() {
-    const delta = clock.getDelta()
-    if (this.animating) this.animate(delta)
-
+  update() {
     this.updateOrientation()
 
     // Store autoClear flag value
@@ -73,21 +68,12 @@ export class FixedPosObject extends THREE.Object3D {
     const viewport = new THREE.Vector4()
     this.renderer.getViewport(viewport)
     const pos = this.calculateViewportPos()
-    this.renderer.setViewport(pos.x, pos.y, this.objectDim, this.objectDim)
-    this.renderer.render(this, this.objectCamera)
+    this.renderer.setViewport(pos.x, pos.y, this.gizmoDim, this.gizmoDim)
+    this.renderer.render(this, this.gizmoCamera)
     this.renderer.setViewport(viewport.x, viewport.y, viewport.z, viewport.w)
 
     // Restore autoClear flag vlaue
     this.renderer.autoClear = autoClear
-  }
-
-  /**
-   * Animation loop
-   * @param delta The seconds passed since the time clock's oldTime was set and sets clock's oldTime to the
-   * current time.
-   */
-  protected animate(_delta: number) {
-    // Do nothing for now. The children class can override this function to add its own logic.
   }
 
   /**
@@ -106,8 +92,8 @@ export class FixedPosObject extends THREE.Object3D {
     offsetY: number,
     bbox: THREE.Box2
   ) {
-    const x = ((offsetX - bbox.min.x) / this.objectDim) * 2 - 1
-    const y = -((offsetY - bbox.min.y) / this.objectDim) * 2 + 1
+    const x = ((offsetX - bbox.min.x) / this.gizmoDim) * 2 - 1
+    const y = -((offsetY - bbox.min.y) / this.gizmoDim) * 2 + 1
     return { x, y }
   }
 
@@ -115,8 +101,8 @@ export class FixedPosObject extends THREE.Object3D {
     const domElement = this.renderer.domElement
     const canvasWidth = domElement.offsetWidth
     const canvasHeight = domElement.offsetHeight
-    const pos = this.objectPos
-    const length = this.objectDim
+    const pos = this.gizmoPos
+    const length = this.gizmoDim
     let x = canvasWidth - length
     let y = canvasHeight - length
     switch (pos) {
@@ -138,8 +124,8 @@ export class FixedPosObject extends THREE.Object3D {
     const domElement = this.renderer.domElement
     const canvasWidth = domElement.offsetWidth
     const canvasHeight = domElement.offsetHeight
-    const pos = this.objectPos
-    const length = this.objectDim
+    const pos = this.gizmoPos
+    const length = this.gizmoDim
     const bbox = new THREE.Box2(
       new THREE.Vector2(canvasWidth - length, 0),
       new THREE.Vector2(canvasWidth, length)

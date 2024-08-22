@@ -24,7 +24,7 @@ npm install @mlightcad/three-viewcube
 Use it with your `camera` and `renderer` instances.
 
 ```javascript
-import { ViewCubeHelper } from '@mlightcad/three-viewcube'
+import { ViewCubeGizmo } from '@mlightcad/three-viewcube'
 
 // Create your renderer and set alhpa to true
 const renderer = new THREE.WebGLRenderer({ alpha: true })
@@ -35,22 +35,31 @@ const camera = ...
 // Create your orbit controller
 const cameraControls = new OrbitControls(camera, renderer.domElement)
 
-// Create viewcube helper
-const viewCubeHelper = new ViewCubeHelper(camera, renderer)
-viewCubeHelper.setControls(cameraControls)
+// Create viewcube gizmo
+const viewCubeGizmo = new ViewCubeGizmo(camera, renderer)
 
 // Animation loop
 function animate() {
   requestAnimationFrame(animate)
   renderer.clear()
   renderer.render(scene, camera)
-  viewCubeHelper.render(renderer)
+  viewCubeGizmo.update()
 }
 
 animate()
 ```
 
-You can customize view cube by passing one `ViewCubeOptions` instance when creating one ViewCubeHelper instance. Defintion of `ViewCubeOptions` is as follows.
+If you want to rotate the current view after clicked face, edge, or corner of viewcube. You need to listen to 'change' event of `ViewCubeGizmo`.
+
+```javascript
+viewCubeGizmo.addEventListener('change', event => {
+  // TODO: Add you own logic to rotate the view
+})
+```
+
+To correctly rotate current view, you need to consider bounding box of objects and camera (position, lookAt, movement, rotation) in current view and camera. Class `SimpleCameraControls` is provided to faciliate it. However, `SimpleCameraControls` just considers camera roation. You can refine `SimpleCameraControls` by yourselves.
+
+You can customize view cube by passing one `ViewCubeOptions` instance when creating one `ViewCubeGizmo` instance. Defintion of `ViewCubeOptions` is as follows.
 
 ```javascript
 /**
@@ -89,7 +98,7 @@ export interface ViewCubeOptions {
 For example, you can set view cube options as follows if you want to set text shown in each face to Chinese.
 
 ```javascript
-import { FaceNames, ViewCubeHelper } from '@mlightcad/three-viewcube'
+import { FaceNames, ViewCubeGizmo } from '@mlightcad/three-viewcube'
 
 // Create you camera and render
 ......
@@ -102,7 +111,7 @@ const faceNames: FaceNames = {
   left: '左',
   bottom: '底'
 }
-const viewCubeHelper = new ViewCubeHelper(camera, renderer, { faceNames: faceNames })
+const viewCubeGizmo = new ViewCubeGizmo(camera, renderer, { faceNames: faceNames })
 
 ```
 
