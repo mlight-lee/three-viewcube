@@ -67,7 +67,7 @@ importers:
   packages/three-viewcube-demo:
     dependencies:
       '@mlightcad/three-viewcube':
-        specifier: ^0.0.5
+        specifier: ^0.0.6
         version: link:../three-viewcube
       '@tweenjs/tween.js':
         specifier: ^25.0.0

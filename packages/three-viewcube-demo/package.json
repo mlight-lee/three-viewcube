@@ -28,7 +28,7 @@
     "@types/three": "^0.166.0"
   },
   "dependencies": {
-    "@mlightcad/three-viewcube": "^0.0.5",
+    "@mlightcad/three-viewcube": "^0.0.6",
     "@tweenjs/tween.js": "^25.0.0",
     "lil-gui": "^0.19.2",
     "three": "^0.166.1"
