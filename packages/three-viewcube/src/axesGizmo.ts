@@ -3,6 +3,34 @@ import { createTextSprite } from './viewCubeData'
 import { FixedPosGizmo, ObjectPosition } from './fixedPosGizmo'
 
 /**
+ * Options to customize axes
+ */
+export interface AxesOptions {
+  /**
+   * Position of axes
+   */
+  pos?: ObjectPosition
+  /**
+   * Size of area ocupied by view cube. Because width and height of this area is same, it is single value.
+   * The real size of view cube will be calculated automatically considering rotation.
+   */
+  size?: number
+  /**
+   * Flag to show z-axis
+   */
+  hasZAxis?: boolean
+}
+
+/**
+ * Default axes option values
+ */
+export const DEFAULT_AXES_OPTIONS: AxesOptions = {
+  pos: ObjectPosition.LEFT_BOTTOM,
+  size: 100,
+  hasZAxis: true
+}
+
+/**
  * An axis gizmo to visualize the axes in a simple way.
  * The X axis is red, the Y axis is green, and the Z axis is blue by default
  */
@@ -16,15 +44,18 @@ export class AxesGizmo extends FixedPosGizmo {
   constructor(
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
     renderer: THREE.WebGLRenderer,
-    size = 100,
-    hasZAxis = true
+    options: AxesOptions
   ) {
-    super(camera, renderer, size, ObjectPosition.LEFT_BOTTOM)
-    this.hasZAxis = hasZAxis
+    const mergedOptions: AxesOptions = {
+      ...DEFAULT_AXES_OPTIONS,
+      ...options
+    }
+    super(camera, renderer, mergedOptions.size, options.pos)
+    this.hasZAxis = mergedOptions.hasZAxis!
 
     const vertices = [0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0]
     const colors = [1, 0, 0, 1, 0.6, 0, 0, 1, 0, 0.6, 1, 0]
-    if (hasZAxis) {
+    if (this.hasZAxis) {
       vertices.push(0, 0, 0, 0, 0, 2)
       colors.push(0, 0, 1, 0, 0.6, 1)
     }
@@ -53,7 +84,7 @@ export class AxesGizmo extends FixedPosGizmo {
     this.yText.position.set(-1, 1.5, -1)
     this.add(this.yText)
 
-    if (hasZAxis) {
+    if (this.hasZAxis) {
       this.zText = createTextSprite('Z')
       this.zText.position.set(-1, -1, 1.5)
       this.add(this.zText)

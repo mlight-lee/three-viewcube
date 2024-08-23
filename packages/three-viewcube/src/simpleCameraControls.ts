@@ -27,9 +27,7 @@ export class SimpleCameraControls {
    * @param renderer Renderer used in your canvas
    * @param options Options to customize view cube helper
    */
-  constructor(
-    camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
-  ) {
+  constructor(camera: THREE.PerspectiveCamera | THREE.OrthographicCamera) {
     this.camera = camera
     this.animating = false
     this.turnRate = 2 * Math.PI // turn rate in angles per second
@@ -79,7 +77,7 @@ export class SimpleCameraControls {
 
   /**
    * Fly with the target quaterion
-   * @param quaternion 
+   * @param quaternion
    */
   flyTo(quaternion: THREE.Quaternion) {
     const focusPoint = new THREE.Vector3()

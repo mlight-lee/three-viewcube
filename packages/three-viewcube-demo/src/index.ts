@@ -1,4 +1,4 @@
-import { Viewer } from './viewer'
+import { DoubleViewer } from './doubleViewer'
 
-const viewer = new Viewer()
+const viewer = new DoubleViewer()
 viewer.animate()

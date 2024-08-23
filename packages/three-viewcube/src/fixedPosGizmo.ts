@@ -13,7 +13,9 @@ export enum ObjectPosition {
 /**
  * A customizable gizmo with fixed postion in viewport
  */
-export class FixedPosGizmo<TEventMap extends THREE.Object3DEventMap = THREE.Object3DEventMap> extends THREE.Object3D<TEventMap> {
+export class FixedPosGizmo<
+  TEventMap extends THREE.Object3DEventMap = THREE.Object3DEventMap
+> extends THREE.Object3D<TEventMap> {
   protected gizmoCamera: THREE.OrthographicCamera
   protected renderer: THREE.WebGLRenderer
   protected camera: THREE.PerspectiveCamera | THREE.OrthographicCamera
@@ -24,7 +26,7 @@ export class FixedPosGizmo<TEventMap extends THREE.Object3DEventMap = THREE.Obje
    * Construct one instance of this gizmo
    * @param camera Camera used in your canvas
    * @param renderer Renderer used in your canvas
-   * @param dimension Size of area ocupied by this gizmo. Because width and height of this area is same, 
+   * @param dimension Size of area ocupied by this gizmo. Because width and height of this area is same,
    * it is single value. The real size of the objet will be calculated automatically considering rotation.
    * @param pos Position of the gizmo
    */
