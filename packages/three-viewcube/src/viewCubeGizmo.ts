@@ -40,7 +40,7 @@ export interface ViewCubeOptions {
 }
 
 /**
- * Default option values
+ * Default view cube option values
  */
 export const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
   pos: ObjectPosition.RIGHT_TOP,
@@ -51,7 +51,7 @@ export const DEFAULT_VIEWCUBE_OPTIONS: ViewCubeOptions = {
   faceNames: DEFAULT_FACENAMES
 }
 
-export interface ViewCubeEvent extends THREE.Object3DEventMap{
+export interface ViewCubeEvent extends THREE.Object3DEventMap {
   change: { quaternion: THREE.Quaternion }
 }
 
@@ -190,23 +190,17 @@ export class ViewCubeGizmo extends FixedPosGizmo<ViewCubeEvent> {
         targetQuaternion.setFromEuler(new THREE.Euler(0, Math.PI, 0))
         break
       case FACES.LEFT:
-        targetQuaternion.setFromEuler(
-          new THREE.Euler(0, -Math.PI * 0.5, 0)
-        )
+        targetQuaternion.setFromEuler(new THREE.Euler(0, -Math.PI * 0.5, 0))
         break
       case FACES.TOP:
-        targetQuaternion.setFromEuler(
-          new THREE.Euler(-Math.PI * 0.5, 0, 0)
-        )
+        targetQuaternion.setFromEuler(new THREE.Euler(-Math.PI * 0.5, 0, 0))
         break
       case FACES.BOTTOM:
         targetQuaternion.setFromEuler(new THREE.Euler(Math.PI * 0.5, 0, 0))
         break
 
       case FACES.TOP_FRONT_EDGE:
-        targetQuaternion.setFromEuler(
-          new THREE.Euler(-Math.PI * 0.25, 0, 0)
-        )
+        targetQuaternion.setFromEuler(new THREE.Euler(-Math.PI * 0.25, 0, 0))
         break
       case FACES.TOP_RIGHT_EDGE:
         targetQuaternion.setFromEuler(
@@ -225,9 +219,7 @@ export class ViewCubeGizmo extends FixedPosGizmo<ViewCubeEvent> {
         break
 
       case FACES.BOTTOM_FRONT_EDGE:
-        targetQuaternion.setFromEuler(
-          new THREE.Euler(Math.PI * 0.25, 0, 0)
-        )
+        targetQuaternion.setFromEuler(new THREE.Euler(Math.PI * 0.25, 0, 0))
         break
       case FACES.BOTTOM_RIGHT_EDGE:
         targetQuaternion.setFromEuler(
@@ -246,24 +238,16 @@ export class ViewCubeGizmo extends FixedPosGizmo<ViewCubeEvent> {
         break
 
       case FACES.FRONT_RIGHT_EDGE:
-        targetQuaternion.setFromEuler(
-          new THREE.Euler(0, Math.PI * 0.25, 0)
-        )
+        targetQuaternion.setFromEuler(new THREE.Euler(0, Math.PI * 0.25, 0))
         break
       case FACES.BACK_RIGHT_EDGE:
-        targetQuaternion.setFromEuler(
-          new THREE.Euler(0, Math.PI * 0.75, 0)
-        )
+        targetQuaternion.setFromEuler(new THREE.Euler(0, Math.PI * 0.75, 0))
         break
       case FACES.BACK_LEFT_EDGE:
-        targetQuaternion.setFromEuler(
-          new THREE.Euler(0, -Math.PI * 0.75, 0)
-        )
+        targetQuaternion.setFromEuler(new THREE.Euler(0, -Math.PI * 0.75, 0))
         break
       case FACES.FRONT_LEFT_EDGE:
-        targetQuaternion.setFromEuler(
-          new THREE.Euler(0, -Math.PI * 0.25, 0)
-        )
+        targetQuaternion.setFromEuler(new THREE.Euler(0, -Math.PI * 0.25, 0))
         break
 
       case FACES.TOP_FRONT_RIGHT_CORNER:
